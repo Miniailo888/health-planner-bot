@@ -1,0 +1,14 @@
+{
+  "name": "health-planner-bot",
+  "version": "2.0.0",
+  "description": "Telegram Mini App — Health & Fitness Planner",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "telegraf": "^4.16.3"
+  }
+}

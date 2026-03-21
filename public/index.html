@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Health Planner</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Health Planner" />
+  <meta name="theme-color" content="#4CAF50" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ ONBOARDING OVERLAY ═══ -->
+  <div class="onboarding-overlay" id="onboardingOverlay">
+    <div class="onboarding-inner">
+
+      <!-- Step 1: Gender -->
+      <div class="ob-step active" id="ob-step-1">
+        <div class="ob-step-icon">👤</div>
+        <h2 class="ob-title">Вітаємо в Health Planner!</h2>
+        <p class="ob-subtitle">Оберіть вашу стать для персоналізованих рекомендацій</p>
+        <div class="ob-gender-cards">
+          <button class="ob-gender-card" data-gender="male" onclick="selectGender('male')">
+            <span class="ob-gender-icon">♂</span>
+            <span class="ob-gender-label">Чоловік</span>
+          </button>
+          <button class="ob-gender-card" data-gender="female" onclick="selectGender('female')">
+            <span class="ob-gender-icon">♀</span>
+            <span class="ob-gender-label">Жінка</span>
+          </button>
+        </div>
+        <div class="ob-step-indicator">
+          <span class="ob-dot active"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+        </div>
+      </div>
+
+      <!-- Step 2: Age -->
+      <div class="ob-step" id="ob-step-2">
+        <div class="ob-step-icon">🎂</div>
+        <h2 class="ob-title">Ваш вік</h2>
+        <p class="ob-subtitle">Оберіть вашу вікову групу</p>
+        <div class="ob-age-grid">
+          <button class="ob-age-btn" data-age="18" onclick="selectAge(18)">18</button>
+          <button class="ob-age-btn" data-age="20" onclick="selectAge(20)">20</button>
+          <button class="ob-age-btn" data-age="25" onclick="selectAge(25)">25</button>
+          <button class="ob-age-btn" data-age="30" onclick="selectAge(30)">30</button>
+          <button class="ob-age-btn" data-age="35" onclick="selectAge(35)">35</button>
+          <button class="ob-age-btn" data-age="40" onclick="selectAge(40)">40</button>
+          <button class="ob-age-btn" data-age="45" onclick="selectAge(45)">45</button>
+          <button class="ob-age-btn" data-age="50" onclick="selectAge(50)">50</button>
+        </div>
+        <div class="ob-step-indicator">
+          <span class="ob-dot"></span>
+          <span class="ob-dot active"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+        </div>
+      </div>
+
+      <!-- Step 3: Weight -->
+      <div class="ob-step" id="ob-step-3">
+        <div class="ob-step-icon">⚖️</div>
+        <h2 class="ob-title">Ваша вага</h2>
+        <p class="ob-subtitle">Оберіть вашу поточну вагу</p>
+        <div class="ob-weight-grid">
+          <button class="ob-weight-btn" data-weight="50" onclick="selectWeight(50)">50 кг</button>
+          <button class="ob-weight-btn" data-weight="60" onclick="selectWeight(60)">60 кг</button>
+          <button class="ob-weight-btn" data-weight="70" onclick="selectWeight(70)">70 кг</button>
+          <button class="ob-weight-btn" data-weight="80" onclick="selectWeight(80)">80 кг</button>
+          <button class="ob-weight-btn" data-weight="90" onclick="selectWeight(90)">90 кг</button>
+          <button class="ob-weight-btn" data-weight="100" onclick="selectWeight(100)">100 кг</button>
+          <button class="ob-weight-btn" data-weight="110" onclick="selectWeight(110)">110 кг</button>
+          <button class="ob-weight-btn" data-weight="120" onclick="selectWeight(120)">120 кг</button>
+        </div>
+        <div class="ob-step-indicator">
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot active"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+        </div>
+      </div>
+
+      <!-- Step 4: Height -->
+      <div class="ob-step" id="ob-step-4">
+        <div class="ob-step-icon">📏</div>
+        <h2 class="ob-title">Ваш зріст</h2>
+        <p class="ob-subtitle">Оберіть ваш зріст</p>
+        <div class="ob-height-grid">
+          <button class="ob-height-btn" data-height="150" onclick="selectHeight(150)">150 см</button>
+          <button class="ob-height-btn" data-height="155" onclick="selectHeight(155)">155 см</button>
+          <button class="ob-height-btn" data-height="160" onclick="selectHeight(160)">160 см</button>
+          <button class="ob-height-btn" data-height="165" onclick="selectHeight(165)">165 см</button>
+          <button class="ob-height-btn" data-height="170" onclick="selectHeight(170)">170 см</button>
+          <button class="ob-height-btn" data-height="175" onclick="selectHeight(175)">175 см</button>
+          <button class="ob-height-btn" data-height="180" onclick="selectHeight(180)">180 см</button>
+          <button class="ob-height-btn" data-height="185" onclick="selectHeight(185)">185 см</button>
+          <button class="ob-height-btn" data-height="190" onclick="selectHeight(190)">190 см</button>
+          <button class="ob-height-btn" data-height="195" onclick="selectHeight(195)">195 см</button>
+          <button class="ob-height-btn" data-height="200" onclick="selectHeight(200)">200 см</button>
+        </div>
+        <div class="ob-step-indicator">
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot active"></span>
+          <span class="ob-dot"></span>
+        </div>
+      </div>
+
+      <!-- Step 5: Results -->
+      <div class="ob-step" id="ob-step-5">
+        <div class="ob-step-icon">🎯</div>
+        <h2 class="ob-title">Ваш профіль готовий!</h2>
+        <p class="ob-subtitle">Ось ваші персональні показники</p>
+        <div class="ob-results" id="obResults"></div>
+        <button class="ob-start-btn" onclick="finishOnboarding()">🚀 Почати!</button>
+        <div class="ob-step-indicator">
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot active"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="header-logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Health Planner</span>
+      </div>
+      <div class="header-badge" id="userBadge">Мій план</div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="app-main" id="appMain">
+
+    <!-- ╔══ ХАРЧУВАННЯ ══╗ -->
+    <section class="tab-section active" id="tab-nutrition">
+      <div class="section-hero nutrition-hero">
+        <div class="hero-icon">🥗</div>
+        <div class="hero-text">
+          <h2>Харчування</h2>
+          <p id="nutritionHeroSubtitle">20 збалансованих меню</p>
+        </div>
+      </div>
+
+      <div class="category-pills">
+        <button class="pill active" data-cat="mass">💪 Набір маси</button>
+        <button class="pill" data-cat="cut">🔥 Схуднення</button>
+        <button class="pill" data-cat="balance">⚖️ Підтримка</button>
+        <button class="pill" data-cat="saved">⭐ Збережені</button>
+      </div>
+      <div class="level-pills">
+        <button class="level-pill active" data-level="all">Всі рівні</button>
+        <button class="level-pill" data-level="basic">🎯 Базовий</button>
+        <button class="level-pill" data-level="advanced">💪 Просунутий</button>
+      </div>
+
+      <div class="cards-list" id="nutritionCards"></div>
+    </section>
+
+    <!-- ╔══ ВІТАМІНИ ══╗ -->
+    <section class="tab-section" id="tab-vitamins">
+      <div class="section-hero vitamins-hero">
+        <div class="hero-icon">💊</div>
+        <div class="hero-text">
+          <h2>Вітаміни</h2>
+          <p>Персональні рекомендації</p>
+        </div>
+      </div>
+      <div id="vitaminsContent"></div>
+    </section>
+
+    <!-- ╔══ ТИЖДЕНЬ ══╗ -->
+    <section class="tab-section" id="tab-week">
+      <div class="section-hero week-hero">
+        <div class="hero-icon">📅</div>
+        <div class="hero-text">
+          <h2>Тижневий план</h2>
+          <p>Повна програма на 7 днів</p>
+        </div>
+      </div>
+
+      <div class="week-goal-selector" id="weekGoalSelector">
+        <p class="selector-label">Оберіть ціль:</p>
+        <div class="goal-cards">
+          <button class="goal-card" data-goal="mass">
+            <span class="goal-icon">🏋️</span>
+            <span class="goal-name">Набір маси</span>
+            <span class="goal-desc">3000–3800 ккал/день</span>
+          </button>
+          <button class="goal-card" data-goal="cut">
+            <span class="goal-icon">🔥</span>
+            <span class="goal-name">Схуднення</span>
+            <span class="goal-desc">1300–1700 ккал/день</span>
+          </button>
+          <button class="goal-card" data-goal="general">
+            <span class="goal-icon">🌟</span>
+            <span class="goal-name">Форма</span>
+            <span class="goal-desc">1900–2400 ккал/день</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="weekPlanDisplay" class="week-plan-display hidden"></div>
+    </section>
+
+    <!-- ╔══ СПОРТ ══╗ -->
+    <section class="tab-section" id="tab-sport">
+      <div class="section-hero sport-hero">
+        <div class="hero-icon">💪</div>
+        <div class="hero-text">
+          <h2>Тренування</h2>
+          <p>9 програм для будь-якої цілі</p>
+        </div>
+      </div>
+
+      <div class="category-pills">
+        <button class="pill active" data-scat="mass">🏋️ Набір маси</button>
+        <button class="pill" data-scat="cut">🔥 Схуднення</button>
+        <button class="pill" data-scat="general">🌟 Загальна форма</button>
+        <button class="pill" data-scat="saved">⭐ Збережені</button>
+      </div>
+
+      <div class="cards-list" id="sportCards"></div>
+    </section>
+
+    <!-- ╔══ ПРОФІЛЬ ══╗ -->
+    <section class="tab-section" id="tab-profile">
+      <div class="section-hero profile-hero">
+        <div class="hero-icon">👤</div>
+        <div class="hero-text">
+          <h2>Профіль</h2>
+          <p>Ваші параметри та цілі</p>
+        </div>
+      </div>
+      <div id="profileContent"></div>
+    </section>
+
+    <!-- ╔══ ЦИКЛ (тільки для жінок) ══╗ -->
+    <section class="tab-section" id="tab-cycle">
+      <div class="section-hero cycle-hero">
+        <div class="hero-icon">🌸</div>
+        <div class="hero-text">
+          <h2>Менструальний цикл</h2>
+          <p>Фази, симптоми, прогнози</p>
+        </div>
+      </div>
+      <div id="cycleContent"></div>
+    </section>
+
+    <!-- ╔══ НОТАТНИК ══╗ -->
+    <section class="tab-section" id="tab-notes">
+      <div class="section-hero notes-hero">
+        <div class="hero-icon">📓</div>
+        <div class="hero-text">
+          <h2>Нотатник</h2>
+          <p>Ваші нотатки та записи</p>
+        </div>
+        <label class="notes-bg-btn" title="Змінити фон">
+          🖼
+          <input type="file" accept="image/*" id="notesBgInput" style="display:none" onchange="setNotesBg(this)">
+        </label>
+      </div>
+      <div class="notes-add-bar">
+        <button class="notes-add-btn" onclick="openNoteModal()">+ Нова нотатка</button>
+      </div>
+      <div class="notes-grid" id="notesGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV — 7 tabs -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" data-tab="nutrition">
+      <span class="nav-icon">🥗</span>
+      <span class="nav-label">Їжа</span>
+    </button>
+    <button class="nav-btn" data-tab="vitamins">
+      <span class="nav-icon">💊</span>
+      <span class="nav-label">Вітаміни</span>
+    </button>
+    <button class="nav-btn" data-tab="week">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Тиждень</span>
+    </button>
+    <button class="nav-btn" data-tab="sport">
+      <span class="nav-icon">💪</span>
+      <span class="nav-label">Спорт</span>
+    </button>
+    <button class="nav-btn nav-btn-cycle hidden" data-tab="cycle" id="navCycle">
+      <span class="nav-icon">🌸</span>
+      <span class="nav-label">Цикл</span>
+    </button>
+    <button class="nav-btn" data-tab="notes">
+      <span class="nav-icon">📓</span>
+      <span class="nav-label">Нотатки</span>
+    </button>
+    <button class="nav-btn" data-tab="profile">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Профіль</span>
+    </button>
+  </nav>
+
+  <!-- NOTE MODAL -->
+  <div class="note-modal-overlay hidden" id="noteModalOverlay" onclick="closeNoteModal()"></div>
+  <div class="note-modal hidden" id="noteModal">
+    <div class="note-modal-header">
+      <span id="noteModalTitle">Нова нотатка</span>
+      <button onclick="closeNoteModal()">✕</button>
+    </div>
+    <div class="note-color-picker" id="noteColorPicker">
+      <button class="note-color-btn active" data-color="#ff6b6b" style="background:#ff6b6b" onclick="selectNoteColor('#ff6b6b',this)"></button>
+      <button class="note-color-btn" data-color="#ffd93d" style="background:#ffd93d" onclick="selectNoteColor('#ffd93d',this)"></button>
+      <button class="note-color-btn" data-color="#6bcb77" style="background:#6bcb77" onclick="selectNoteColor('#6bcb77',this)"></button>
+      <button class="note-color-btn" data-color="#4d96ff" style="background:#4d96ff" onclick="selectNoteColor('#4d96ff',this)"></button>
+      <button class="note-color-btn" data-color="#ff922b" style="background:#ff922b" onclick="selectNoteColor('#ff922b',this)"></button>
+      <button class="note-color-btn" data-color="#cc5de8" style="background:#cc5de8" onclick="selectNoteColor('#cc5de8',this)"></button>
+    </div>
+    <input class="note-title-input" id="noteTitleInput" placeholder="Заголовок..." maxlength="60">
+    <textarea class="note-text-input" id="noteTextInput" placeholder="Текст нотатки..." rows="6"></textarea>
+    <div class="note-modal-footer">
+      <button class="note-delete-btn hidden" id="noteDeleteBtn" onclick="deleteCurrentNote()">🗑 Видалити</button>
+      <button class="note-save-btn" onclick="saveCurrentNote()">💾 Зберегти</button>
+    </div>
+  </div>
+
+  <!-- CYCLE DAY MODAL -->
+  <div class="cycle-day-overlay hidden" id="cycleDayOverlay" onclick="closeCycleDayModal()"></div>
+  <div class="cycle-day-modal hidden" id="cycleDayModal">
+    <div class="note-modal-header">
+      <span id="cycleDayTitle">День циклу</span>
+      <button onclick="closeCycleDayModal()">✕</button>
+    </div>
+    <div class="cycle-symptoms-grid" id="cycleSymptomsGrid"></div>
+    <textarea class="note-text-input" id="cycleDayNote" placeholder="Нотатка на цей день..." rows="3"></textarea>
+    <button class="note-save-btn" style="width:100%;margin-top:10px" onclick="saveCycleDayData()">💾 Зберегти</button>
+  </div>
+
+  <!-- MODAL — детальний перегляд -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+  <div class="modal" id="detailModal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 id="modalTitle"></h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script src="plans.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
