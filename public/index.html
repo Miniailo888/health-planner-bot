@@ -362,6 +362,11 @@
       <div class="notes-grid" id="notesGrid"></div>
     </section>
 
+    <!-- ╔══ ЧАТ ══╗ -->
+    <section class="tab-section" id="tab-chat">
+      <div id="chatTabContent"></div>
+    </section>
+
     <!-- ╔══ ТРЕНЕР (учень) ══╗ -->
     <section class="tab-section" id="tab-coach">
       <div id="coachTabStudentContent"></div>
@@ -399,42 +404,66 @@
 
   </main>
 
-  <!-- BOTTOM NAV — 7 tabs -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
     <button class="nav-btn active" data-tab="nutrition">
-      <span class="nav-icon">🥗</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+      </span>
       <span class="nav-label">Їжа</span>
     </button>
     <button class="nav-btn" data-tab="vitamins">
-      <span class="nav-icon">💊</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+      </span>
       <span class="nav-label">Вітаміни</span>
     </button>
     <button class="nav-btn" data-tab="week">
-      <span class="nav-icon">📅</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+      </span>
       <span class="nav-label">Тиждень</span>
     </button>
     <button class="nav-btn" data-tab="sport">
-      <span class="nav-icon">💪</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 5v14M6 12h12M3 7h3M3 17h3M18 7h3M18 17h3"/></svg>
+      </span>
       <span class="nav-label">Спорт</span>
     </button>
     <button class="nav-btn nav-btn-cycle hidden" data-tab="cycle" id="navCycle">
-      <span class="nav-icon">🌸</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </span>
       <span class="nav-label">Цикл</span>
     </button>
     <button class="nav-btn" data-tab="notes">
-      <span class="nav-icon">📓</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+      </span>
       <span class="nav-label">Нотатки</span>
     </button>
+    <button class="nav-btn hidden" data-tab="chat" id="navChat">
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </span>
+      <span class="nav-label">Чат</span>
+    </button>
     <button class="nav-btn hidden" data-tab="coach" id="navCoach">
-      <span class="nav-icon">🏋️</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/><path d="m15.5 2.5-.8 2h-2l1.6 1.2-.6 2 1.8-1.3 1.8 1.3-.6-2 1.6-1.2h-2z"/></svg>
+      </span>
       <span class="nav-label">Тренер</span>
     </button>
     <button class="nav-btn hidden" data-tab="students" id="navStudents">
-      <span class="nav-icon">👥</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </span>
       <span class="nav-label">Учні</span>
     </button>
     <button class="nav-btn" data-tab="profile">
-      <span class="nav-icon">👤</span>
+      <span class="nav-icon-wrap">
+        <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+      </span>
       <span class="nav-label">Профіль</span>
     </button>
   </nav>

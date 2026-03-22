@@ -239,6 +239,7 @@ function bootApp() {
   updateCycleTabVisibility();
   if (userData.role === 'student' && userData.coachId) {
     document.getElementById('navCoach').classList.remove('hidden');
+    document.getElementById('navChat').classList.remove('hidden');
     loadCoachCorrections();
   }
 }
@@ -561,13 +562,14 @@ function switchTabTo(tab) {
   const section = document.getElementById(`tab-${tab}`);
   if (section) section.classList.add('active');
 
-  if (tab !== 'profile' && tab !== 'coach') stopChatPoll();
+  if (tab !== 'profile' && tab !== 'coach' && tab !== 'chat') stopChatPoll();
   if (tab === 'profile')  renderProfile();
   if (tab === 'vitamins') renderVitamins();
   if (tab === 'cycle')    renderCycleTab();
   if (tab === 'notes')    renderNotesTab();
   if (tab === 'students') loadStudentsList();
   if (tab === 'coach')    renderCoachTab();
+  if (tab === 'chat')     renderChatTabMain();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1839,6 +1841,7 @@ function launchCoachDashboard(coach) {
   document.getElementById('coachHeaderName').textContent = coach.name;
   document.getElementById('coachInviteCode').textContent = coach.inviteCode;
   document.getElementById('navStudents').classList.remove('hidden');
+  document.getElementById('navChat').classList.remove('hidden');
 
   applyTheme(profile.gender || 'male');
   if (!profile.gender) {
@@ -2260,6 +2263,124 @@ function closeQrScanner() {
 //   ВКЛАДКА ТРЕНЕРА (для учня)
 // ═══════════════════════════════════════════════════════════
 let coachInfo = null;
+
+// ═══════════════════════════════════════════════════════════
+//   ЧАТ-ВКЛАДКА (standalone)
+// ═══════════════════════════════════════════════════════════
+let chatTabStudentId = null;
+
+async function renderChatTabMain() {
+  const el = document.getElementById('chatTabContent');
+  if (!el) return;
+  stopChatPoll();
+
+  if (userData.role === 'student' && userData.coachId) {
+    await renderChatTabStudent(el);
+  } else if (userData.role === 'coach' && currentCoach) {
+    if (chatTabStudentId) {
+      renderChatTabCoachDirect(el);
+    } else {
+      await renderChatTabCoachList(el);
+    }
+  } else {
+    el.innerHTML = `<div class="chat-empty"><div class="chat-empty-icon">💬</div><div class="chat-empty-title">Чат недоступний</div><div class="chat-empty-sub">Підключіться до тренера або додайте учнів</div></div>`;
+  }
+}
+
+async function renderChatTabStudent(el) {
+  // Fetch coach info if not cached
+  if (!coachInfo && userData.coachId) {
+    try {
+      const r = await fetch(`/api/coach/by-id/${userData.coachId}`);
+      coachInfo = await r.json();
+    } catch {}
+  }
+  const c = coachInfo || {};
+
+  el.innerHTML = `
+    <div class="chat-tab-header">
+      <div class="chat-tab-avatar">🏋️</div>
+      <div class="chat-tab-info">
+        <div class="chat-tab-name">${c.name || 'Тренер'}</div>
+        <div class="chat-tab-sub">Особистий тренер</div>
+      </div>
+    </div>
+    <div class="chat-full-wrap">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-bar">
+        <textarea class="chat-input" id="chatInput" placeholder="Напишіть тренеру..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('student');}"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage('student')">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+  loadChatMessages('student');
+  startChatPoll('student');
+}
+
+async function renderChatTabCoachList(el) {
+  el.innerHTML = `<div class="chat-list-header">Повідомлення</div><div class="chat-list-loading"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>`;
+  try {
+    const res = await fetch(`/api/coach/${currentCoach.id}/students`);
+    const students = await res.json();
+    if (!students.length) {
+      el.innerHTML = `<div class="chat-empty"><div class="chat-empty-icon">💬</div><div class="chat-empty-title">Немає учнів</div><div class="chat-empty-sub">Додайте учнів через код запрошення</div></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="chat-list-header">Повідомлення</div>
+      <div class="chat-list">
+        ${students.map((s, i) => `
+          <div class="chat-list-item" style="animation-delay:${i * 0.06}s" onclick="openCoachChatTab('${s.id}','${(s.profile?.name || 'Учень').replace(/'/g,'&apos;')}','${s.profile?.gender||'male'}')">
+            <div class="chat-list-avatar">${s.profile?.gender === 'female' ? '👩' : '👨'}</div>
+            <div class="chat-list-info">
+              <div class="chat-list-name">${s.profile?.name || 'Учень'}</div>
+              <div class="chat-list-last">Натисніть щоб відкрити чат</div>
+            </div>
+            <div class="chat-list-arrow">›</div>
+          </div>`).join('')}
+      </div>
+    `;
+  } catch {
+    el.innerHTML = `<div class="chat-empty"><div class="chat-empty-icon">⚠️</div><div class="chat-empty-title">Помилка завантаження</div></div>`;
+  }
+}
+
+function openCoachChatTab(studentId, studentName, gender) {
+  chatTabStudentId = studentId;
+  currentStudentId = studentId;
+  const el = document.getElementById('chatTabContent');
+  if (!el) return;
+  const avatar = gender === 'female' ? '👩' : '👨';
+  el.innerHTML = `
+    <div class="chat-tab-header">
+      <button class="chat-tab-back" onclick="chatTabStudentId=null;renderChatTabMain()">←</button>
+      <div class="chat-tab-avatar">${avatar}</div>
+      <div class="chat-tab-info">
+        <div class="chat-tab-name">${studentName}</div>
+        <div class="chat-tab-sub">Ваш учень</div>
+      </div>
+    </div>
+    <div class="chat-full-wrap">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-bar">
+        <textarea class="chat-input" id="chatInput" placeholder="Напишіть повідомлення..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('coach');}"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage('coach')">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+  loadChatMessages('coach');
+  startChatPoll('coach');
+}
+
+function renderChatTabCoachDirect(el) {
+  openCoachChatTab(chatTabStudentId, 'Учень', 'male');
+}
 
 async function renderCoachTab() {
   const el = document.getElementById('coachTabStudentContent');
