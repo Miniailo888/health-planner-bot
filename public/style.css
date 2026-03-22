@@ -1903,7 +1903,7 @@ body.theme-female .goal-selector-btn.active {
 ═══════════════════════════════════════════════════════════ */
 .role-overlay {
   position: fixed; inset: 0; z-index: 300;
-  background: var(--bg);
+  background: var(--tg-bg, #0f0f13);
   display: flex; align-items: flex-start; justify-content: center;
   overflow-y: auto;
 }
@@ -2206,3 +2206,36 @@ body.theme-female .goal-selector-btn.active {
   font-size: 13px; color: var(--tg-text); line-height: 1.5; margin-bottom: 6px;
 }
 .coach-banner-row:last-child { margin-bottom: 0; }
+
+/* ─── MOBILE BRIGHTNESS — більша яскравість текстур на телефонах ── */
+@media (max-width: 600px) {
+  body.theme-female {
+    background: linear-gradient(135deg, #2d1040 0%, #1a0630 50%, #341228 100%);
+    --card-bg: rgba(255,255,255,0.09);
+    --card-border: rgba(212,84,122,0.28);
+  }
+  body.theme-female::before {
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(212,84,122,0.22) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 20%, rgba(155,34,168,0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 80%, rgba(212,84,122,0.14) 0%, transparent 40%);
+  }
+  body:not(.theme-male):not(.theme-female) {
+    --card-bg: rgba(255,255,255,0.09);
+    --card-border: rgba(255,255,255,0.13);
+  }
+  body:not(.theme-male):not(.theme-female)::before {
+    filter: brightness(1.4);
+  }
+  .nutrition-card, .sport-card {
+    filter: brightness(1.08);
+  }
+  .role-card {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+  }
+  body.theme-female .role-card {
+    background: rgba(212,84,122,0.1);
+    border-color: rgba(212,84,122,0.3);
+  }
+}
