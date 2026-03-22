@@ -26,11 +26,30 @@
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-inner">
 
-      <!-- Step 1: Gender -->
+      <!-- Step 1: Name -->
       <div class="ob-step active" id="ob-step-1">
-        <div class="ob-step-icon">👤</div>
+        <div class="ob-step-icon">👋</div>
         <h2 class="ob-title">Вітаємо в Health Planner!</h2>
-        <p class="ob-subtitle">Оберіть вашу стать для персоналізованих рекомендацій</p>
+        <p class="ob-subtitle">Як вас звати? Введіть ваше ім'я</p>
+        <div class="ob-name-wrap">
+          <input class="ob-name-input" id="obNameInput" type="text" placeholder="Ваше ім'я..." maxlength="30" autocomplete="off" />
+          <button class="ob-name-btn" onclick="obNameNext()">Далі →</button>
+        </div>
+        <div class="ob-step-indicator">
+          <span class="ob-dot active"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
+        </div>
+      </div>
+
+      <!-- Step 2: Gender -->
+      <div class="ob-step" id="ob-step-2">
+        <div class="ob-step-icon">👤</div>
+        <h2 class="ob-title">Оберіть стать</h2>
+        <p class="ob-subtitle">Для персоналізованих рекомендацій</p>
         <div class="ob-gender-cards">
           <button class="ob-gender-card" data-gender="male" onclick="selectGender('male')">
             <span class="ob-gender-icon">♂</span>
@@ -42,6 +61,7 @@
           </button>
         </div>
         <div class="ob-step-indicator">
+          <span class="ob-dot"></span>
           <span class="ob-dot active"></span>
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
@@ -50,8 +70,8 @@
         </div>
       </div>
 
-      <!-- Step 2: Age -->
-      <div class="ob-step" id="ob-step-2">
+      <!-- Step 3: Age -->
+      <div class="ob-step" id="ob-step-3">
         <div class="ob-step-icon">🎂</div>
         <h2 class="ob-title">Ваш вік</h2>
         <p class="ob-subtitle">Оберіть вашу вікову групу</p>
@@ -67,6 +87,7 @@
         </div>
         <div class="ob-step-indicator">
           <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
           <span class="ob-dot active"></span>
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
@@ -74,8 +95,8 @@
         </div>
       </div>
 
-      <!-- Step 3: Weight -->
-      <div class="ob-step" id="ob-step-3">
+      <!-- Step 4: Weight -->
+      <div class="ob-step" id="ob-step-4">
         <div class="ob-step-icon">⚖️</div>
         <h2 class="ob-title">Ваша вага</h2>
         <p class="ob-subtitle">Оберіть вашу поточну вагу</p>
@@ -92,14 +113,15 @@
         <div class="ob-step-indicator">
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
           <span class="ob-dot active"></span>
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
         </div>
       </div>
 
-      <!-- Step 4: Height -->
-      <div class="ob-step" id="ob-step-4">
+      <!-- Step 5: Height -->
+      <div class="ob-step" id="ob-step-5">
         <div class="ob-step-icon">📏</div>
         <h2 class="ob-title">Ваш зріст</h2>
         <p class="ob-subtitle">Оберіть ваш зріст</p>
@@ -120,19 +142,21 @@
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
+          <span class="ob-dot"></span>
           <span class="ob-dot active"></span>
           <span class="ob-dot"></span>
         </div>
       </div>
 
-      <!-- Step 5: Results -->
-      <div class="ob-step" id="ob-step-5">
+      <!-- Step 6: Results -->
+      <div class="ob-step" id="ob-step-6">
         <div class="ob-step-icon">🎯</div>
         <h2 class="ob-title">Ваш профіль готовий!</h2>
         <p class="ob-subtitle">Ось ваші персональні показники</p>
         <div class="ob-results" id="obResults"></div>
         <button class="ob-start-btn" onclick="finishOnboarding()">🚀 Почати!</button>
         <div class="ob-step-indicator">
+          <span class="ob-dot"></span>
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>
           <span class="ob-dot"></span>

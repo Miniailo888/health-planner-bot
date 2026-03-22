@@ -1455,6 +1455,20 @@ body.theme-female .profile-hero-quote { color: var(--rose); }
   margin-bottom: 8px;
 }
 .profile-edit-row:last-child { margin-bottom: 0; }
+.profile-name-wrap { width: 100%; }
+.profile-name-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--tg-text);
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .2s;
+}
+.profile-name-input:focus { border-color: var(--accent); }
 
 /* Gender toggle */
 .gender-toggle {
@@ -1657,6 +1671,44 @@ body.theme-female .goal-selector-btn.active {
   margin-bottom: 28px;
   line-height: 1.5;
 }
+
+/* Name input */
+.ob-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 28px;
+}
+.ob-name-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--tg-text);
+  font-size: 18px;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .2s;
+}
+.ob-name-input:focus {
+  border-color: var(--accent);
+}
+.ob-name-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+}
+.ob-name-btn:active { transform: scale(0.97); opacity: 0.9; }
 
 /* Gender cards */
 .ob-gender-cards {

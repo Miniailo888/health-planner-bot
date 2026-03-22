@@ -28,6 +28,7 @@ let userData = {
 
 // profile data stored separately
 let profile = {
+  name:   '',
   gender: null,   // 'male' | 'female'
   age:    25,
   weight: 70,
@@ -36,7 +37,7 @@ let profile = {
 };
 
 // onboarding temp state
-let obTemp = { gender: null, age: null, weight: null, height: null };
+let obTemp = { name: '', gender: null, age: null, weight: null, height: null };
 
 let currentNutritionCat   = 'mass';
 let currentNutritionLevel = 'all';
@@ -110,11 +111,15 @@ function applyTheme(gender) {
 // ─── INIT ─────────────────────────────────────────────────────
 loadData();
 const hasProfile = loadProfile();
-document.getElementById('userBadge').textContent = userName;
+document.getElementById('userBadge').textContent = profile.name || userName;
 
 if (!hasProfile || !profile.gender) {
   // show onboarding
   document.getElementById('onboardingOverlay').style.display = 'flex';
+  // Enter key on name input
+  document.getElementById('obNameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') obNameNext();
+  });
 } else {
   document.getElementById('onboardingOverlay').classList.add('hidden');
   applyTheme(profile.gender);
@@ -140,6 +145,12 @@ function obGoStep(n) {
   obCurrentStep = n;
 }
 
+function obNameNext() {
+  const val = document.getElementById('obNameInput').value.trim();
+  obTemp.name = val || (tg?.initDataUnsafe?.user?.first_name || '');
+  obGoStep(2);
+}
+
 function selectGender(g) {
   obTemp.gender = g;
   document.querySelectorAll('.ob-gender-card').forEach(c => {
@@ -154,7 +165,7 @@ function selectGender(g) {
       ? 'linear-gradient(135deg,#f97316,#ef4444)'
       : 'linear-gradient(135deg,#f43f5e,#a855f7)';
   }
-  setTimeout(() => obGoStep(2), 320);
+  setTimeout(() => obGoStep(3), 320);
 }
 
 function selectAge(a) {
@@ -162,7 +173,7 @@ function selectAge(a) {
   document.querySelectorAll('.ob-age-btn').forEach(b => {
     b.classList.toggle('selected', +b.dataset.age === a);
   });
-  setTimeout(() => obGoStep(3), 250);
+  setTimeout(() => obGoStep(4), 250);
 }
 
 function selectWeight(w) {
@@ -170,7 +181,7 @@ function selectWeight(w) {
   document.querySelectorAll('.ob-weight-btn').forEach(b => {
     b.classList.toggle('selected', +b.dataset.weight === w);
   });
-  setTimeout(() => obGoStep(4), 250);
+  setTimeout(() => obGoStep(5), 250);
 }
 
 function selectHeight(h) {
@@ -180,7 +191,7 @@ function selectHeight(h) {
   });
   setTimeout(() => {
     showObResults();
-    obGoStep(5);
+    obGoStep(6);
   }, 250);
 }
 
@@ -189,6 +200,7 @@ function showObResults() {
   const a = obTemp.age    || 25;
   const w = obTemp.weight || 70;
   const h = obTemp.height || 175;
+  const n = obTemp.name   || '';
 
   const bmr  = calcBMR(g, w, h, a);
   const tdee = calcTDEE(bmr);
@@ -198,6 +210,10 @@ function showObResults() {
   const genderLabel = g === 'male' ? '♂ Чоловік' : '♀ Жінка';
 
   document.getElementById('obResults').innerHTML = `
+    ${n ? `<div class="ob-result-row">
+      <span class="ob-result-label">Ім'я</span>
+      <span class="ob-result-value">${n}</span>
+    </div>` : ''}
     <div class="ob-result-row">
       <span class="ob-result-label">Стать</span>
       <span class="ob-result-value">${genderLabel}</span>
@@ -226,6 +242,7 @@ function showObResults() {
 }
 
 function finishOnboarding() {
+  profile.name   = obTemp.name   || '';
   profile.gender = obTemp.gender || 'male';
   profile.age    = obTemp.age    || 25;
   profile.weight = obTemp.weight || 70;
@@ -233,6 +250,7 @@ function finishOnboarding() {
   profile.goal   = 'balance';
   saveProfile();
   applyTheme(profile.gender);
+  document.getElementById('userBadge').textContent = profile.name || userName;
 
   const overlay = document.getElementById('onboardingOverlay');
   overlay.style.opacity = '0';
@@ -872,6 +890,16 @@ function renderProfile() {
       <div class="profile-edit-section">
         <div class="profile-edit-title">✏️ Редагувати профіль</div>
 
+        <!-- Name -->
+        <div class="profile-edit-row">
+          <div class="profile-edit-label">Ім'я</div>
+          <div class="profile-name-wrap">
+            <input class="profile-name-input" id="profileNameInput" type="text"
+              value="${profile.name || ''}" maxlength="30" placeholder="Введіть ім'я..."
+              onchange="profileSetName(this.value)" />
+          </div>
+        </div>
+
         <!-- Gender -->
         <div class="profile-edit-row">
           <div class="profile-edit-label">Стать</div>
@@ -942,6 +970,12 @@ function renderProfile() {
       </div>
     </div>
   `;
+}
+
+function profileSetName(val) {
+  profile.name = val.trim();
+  saveProfile();
+  document.getElementById('userBadge').textContent = profile.name || userName;
 }
 
 function profileSetGender(g, btn) {
