@@ -2374,7 +2374,14 @@ body.theme-female .goal-selector-btn.active {
 .coach-corrections-section .chat-wrap { margin: 12px 0 0; }
 
 /* ─── Вкладка Тренера (учень) ──────────────────────────────── */
-.coach-student-hero { background: linear-gradient(135deg, rgba(251,146,60,.12), transparent); }
+.coach-student-hero { background: linear-gradient(135deg, rgba(251,146,60,.12), transparent); position: relative; }
+.coach-refresh-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px; padding: 6px 10px; font-size: 16px; cursor: pointer;
+  color: var(--tg-text); transition: background .2s;
+}
+.coach-refresh-btn:active { background: rgba(255,255,255,.2); }
 .coach-notes-card {
   margin: 0 16px 16px; background: var(--card-bg);
   border: 1px solid rgba(251,146,60,.35); border-radius: var(--radius); padding: 16px;

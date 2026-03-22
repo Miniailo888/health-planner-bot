@@ -55,11 +55,12 @@ function loadData() {
 function saveData() {
   try {
     localStorage.setItem(`hp_${userId}`, JSON.stringify(userData));
-    // Фоновий запис на сервер
+    // Фоновий запис на сервер (corrections керуються тренером — не перезаписуємо)
+    const { corrections, ...userDataToSave } = userData;
     fetch(`/api/user/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...userData, profile }),
+      body: JSON.stringify({ ...userDataToSave, profile }),
     }).catch(() => {});
   } catch {}
 }
@@ -73,11 +74,12 @@ function loadProfile() {
 function saveProfile() {
   try {
     localStorage.setItem(`hp_profile_${userId}`, JSON.stringify(profile));
-    // Фоновий запис на сервер
+    // Фоновий запис на сервер (corrections керуються тренером — не перезаписуємо)
+    const { corrections, ...userDataToSave } = userData;
     fetch(`/api/user/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...userData, profile }),
+      body: JSON.stringify({ ...userDataToSave, profile }),
     }).catch(() => {});
   } catch {}
 }
@@ -2264,14 +2266,14 @@ async function renderCoachTab() {
   if (!el) return;
   el.innerHTML = '<div class="coach-loading" style="padding:32px;text-align:center">Завантаження...</div>';
 
-  // Завантажуємо актуальні дані
+  // Завантажуємо актуальні дані (завжди свіжі)
   try {
     const [userRes, coachRes] = await Promise.all([
       fetch(`/api/user/${userId}`),
-      coachInfo ? Promise.resolve({ json: () => coachInfo }) : fetch(`/api/coach/by-id/${userData.coachId}`),
+      fetch(`/api/coach/by-id/${userData.coachId}`),
     ]);
     const userData2 = await userRes.json();
-    if (userData2.corrections) userData.corrections = userData2.corrections;
+    if (userData2.corrections !== undefined) userData.corrections = userData2.corrections;
     coachInfo = await coachRes.json();
   } catch {}
 
@@ -2302,6 +2304,7 @@ async function renderCoachTab() {
         <h2>${c.name || 'Тренер'}</h2>
         <p>Ваш особистий тренер</p>
       </div>
+      <button class="coach-refresh-btn" onclick="renderCoachTab()" title="Оновити">🔄</button>
     </div>
 
     ${hasNotes ? `

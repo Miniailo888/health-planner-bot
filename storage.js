@@ -22,7 +22,8 @@ async function getUser(userId) {
 
 async function saveUser(userId, data) {
   // Видаляємо _id щоб не перезаписувати
-  const { _id, __v, ...payload } = data;
+  // Видаляємо corrections — ними керує тренер через окремий endpoint
+  const { _id, __v, corrections, ...payload } = data;
   await User.findOneAndUpdate(
     { telegramId: String(userId) },
     { $set: payload },
