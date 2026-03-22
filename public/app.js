@@ -179,8 +179,16 @@ async function loadCoachCorrections() {
   try {
     const res = await fetch(`/api/user/${userId}`);
     const data = await res.json();
-    if (data.corrections && (data.corrections.generalNote || data.corrections.nutritionNote || data.corrections.sportNote)) {
-      showCoachBanner(data.corrections);
+    if (data.corrections) {
+      userData.corrections = data.corrections;
+      // оновлюємо картки з призначеними планами тренера
+      renderNutritionCards();
+      renderSportCards();
+      // показуємо банер якщо є нотатки
+      const c = data.corrections;
+      if (c.generalNote || c.nutritionNote || c.sportNote) {
+        showCoachBanner(c);
+      }
     }
   } catch {}
 }
@@ -550,15 +558,33 @@ function renderNutritionCards() {
   const container = document.getElementById('nutritionCards');
   container.innerHTML = '';
 
-  const recommendedId = getRecommendedMenuId();
-  const allMenus = getNutritionMenus();
+  const recommendedId   = getRecommendedMenuId();
+  const allMenus        = getNutritionMenus();
+  const assignedIds     = userData.corrections?.assignedNutrition || [];
 
+  // ── Секція "Від тренера" (тільки якщо є і не у вкладці saved) ──
+  if (assignedIds.length > 0 && currentNutritionCat !== 'saved') {
+    const allFlat = [...(allMenus.mass||[]), ...(allMenus.cut||[]), ...(allMenus.balance||[])];
+    const assignedMenus = assignedIds.map(id => allFlat.find(m => m.id === id)).filter(Boolean);
+    if (assignedMenus.length > 0) {
+      const section = document.createElement('div');
+      section.className = 'coach-assigned-section';
+      section.innerHTML = `<div class="coach-assigned-title">🏋️ Від тренера</div>`;
+      assignedMenus.forEach(menu => {
+        const card = buildNutritionCard(menu, recommendedId, true);
+        section.appendChild(card);
+      });
+      container.appendChild(section);
+    }
+  }
+
+  // ── Звичайні картки ──
   let menus = [];
   if (currentNutritionCat === 'saved') {
     const all = [...(allMenus.mass||[]), ...(allMenus.cut||[]), ...(allMenus.balance||[])];
     menus = all.filter(m => userData.savedNutrition.includes(m.id));
     if (menus.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-text">Збережених меню немає.<br>Натисни ⭐ щоб зберегти.</div></div>`;
+      container.innerHTML += `<div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-text">Збережених меню немає.<br>Натисни ⭐ щоб зберегти.</div></div>`;
       return;
     }
   } else {
@@ -569,42 +595,44 @@ function renderNutritionCards() {
     menus = menus.filter(m => m.level === currentNutritionLevel);
   }
 
-  menus.forEach((menu) => {
-    const isSaved = userData.savedNutrition.includes(menu.id);
-    const times   = userData.mealTimes[menu.id] || {};
-    const catClass = currentNutritionCat === 'mass' ? 'mass-card'
-                   : currentNutritionCat === 'cut'  ? 'cut-card'
-                   : 'balance-card';
-    const isRecommended = recommendedId === menu.id;
+  menus.forEach(menu => container.appendChild(buildNutritionCard(menu, recommendedId, false)));
+}
 
-    const card = document.createElement('div');
-    card.className = `nutrition-card ${catClass}`;
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="card-name">${menu.name}</div>
-        <button class="card-saved-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveNutrition('${menu.id}',event)">
-          ${isSaved ? '⭐' : '☆'}
-        </button>
-      </div>
-      <div class="card-badges">
-        <span class="badge badge-green">🔥 ${menu.kcal}</span>
-        <span class="badge badge-blue">💪 ${menu.protein}</span>
-        <span class="badge badge-orange">${menu.goal}</span>
-        ${isRecommended ? '<span class="badge badge-recommend">✅ Рекомендовано</span>' : ''}
-      </div>
-      <div class="card-meals">
-        ${menu.meals.map(m => `
-          <div class="meal-row">
-            <span class="meal-icon">${m.icon}</span>
-            <span class="meal-text">${m.label}</span>
-            ${times[m.key] ? `<span class="meal-time">${times[m.key]}</span>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-    card.addEventListener('click', () => openNutritionModal(menu));
-    container.appendChild(card);
-  });
+function buildNutritionCard(menu, recommendedId, isCoachAssigned) {
+  const isSaved  = userData.savedNutrition.includes(menu.id);
+  const times    = userData.mealTimes[menu.id] || {};
+  const catClass = menu.category === 'mass' ? 'mass-card'
+                 : menu.category === 'cut'  ? 'cut-card' : 'balance-card';
+  const isRecommended = recommendedId === menu.id;
+
+  const card = document.createElement('div');
+  card.className = `nutrition-card ${catClass}${isCoachAssigned ? ' coach-assigned-card' : ''}`;
+  card.innerHTML = `
+    <div class="card-top">
+      <div class="card-name">${menu.name}</div>
+      <button class="card-saved-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveNutrition('${menu.id}',event)">
+        ${isSaved ? '⭐' : '☆'}
+      </button>
+    </div>
+    <div class="card-badges">
+      <span class="badge badge-green">🔥 ${menu.kcal}</span>
+      <span class="badge badge-blue">💪 ${menu.protein}</span>
+      <span class="badge badge-orange">${menu.goal}</span>
+      ${isRecommended   ? '<span class="badge badge-recommend">✅ Рекомендовано</span>' : ''}
+      ${isCoachAssigned ? '<span class="badge badge-coach">🏋️ Тренер</span>' : ''}
+    </div>
+    <div class="card-meals">
+      ${menu.meals.map(m => `
+        <div class="meal-row">
+          <span class="meal-icon">${m.icon}</span>
+          <span class="meal-text">${m.label}</span>
+          ${times[m.key] ? `<span class="meal-time">${times[m.key]}</span>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  card.addEventListener('click', () => openNutritionModal(menu));
+  return card;
 }
 
 function toggleSaveNutrition(id, event) {
@@ -752,51 +780,70 @@ document.querySelectorAll('.pill[data-scat]').forEach((pill) => {
 });
 
 function renderSportCards() {
-  const container = document.getElementById('sportCards');
+  const container  = document.getElementById('sportCards');
   container.innerHTML = '';
 
+  const assignedIds = userData.corrections?.assignedSport || [];
+
+  // ── Секція "Від тренера" ──
+  if (assignedIds.length > 0 && currentSportCat !== 'saved') {
+    const allFlat = [...SPORT_PROGRAMS.mass, ...SPORT_PROGRAMS.cut, ...SPORT_PROGRAMS.general];
+    const assignedProgs = assignedIds.map(id => allFlat.find(p => p.id === id)).filter(Boolean);
+    if (assignedProgs.length > 0) {
+      const section = document.createElement('div');
+      section.className = 'coach-assigned-section';
+      section.innerHTML = `<div class="coach-assigned-title">🏋️ Від тренера</div>`;
+      assignedProgs.forEach(prog => section.appendChild(buildSportCard(prog, true)));
+      container.appendChild(section);
+    }
+  }
+
+  // ── Звичайні картки ──
   let programs = [];
   if (currentSportCat === 'saved') {
     const all = [...SPORT_PROGRAMS.mass, ...SPORT_PROGRAMS.cut, ...SPORT_PROGRAMS.general];
     programs = all.filter(p => userData.savedSport.includes(p.id));
     if (programs.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-text">Збережених планів немає.<br>Натисни ⭐ щоб зберегти.</div></div>`;
+      container.innerHTML += `<div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-text">Збережених планів немає.<br>Натисни ⭐ щоб зберегти.</div></div>`;
       return;
     }
   } else {
     programs = SPORT_PROGRAMS[currentSportCat] || [];
   }
 
-  programs.forEach((prog) => {
-    const isSaved = userData.savedSport.includes(prog.id);
-    const days = DAY_KEYS.map(d => {
-      const focus  = prog.week[d]?.focus || '';
-      const isRest = focus.includes('Відпочинок') || focus.includes('😴');
-      return `<span class="day-chip ${isRest ? 'rest' : ''}">${getDayShort(d)}</span>`;
-    }).join('');
+  programs.forEach(prog => container.appendChild(buildSportCard(prog, false)));
+}
 
-    const card = document.createElement('div');
-    card.className = 'sport-card';
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="card-name">${prog.name}</div>
-        <button class="card-saved-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveSport('${prog.id}',event)">
-          ${isSaved ? '⭐' : '☆'}
-        </button>
-      </div>
-      <div class="card-badges">
-        <span class="badge badge-orange">📊 ${prog.level}</span>
-        <span class="badge badge-blue">⏱ ${prog.duration}</span>
-        <span class="badge badge-green">😴 Відпочинок ${prog.rest}</span>
-      </div>
-      <div class="sport-days-row">${days}</div>
-      <div class="sport-info-row">
-        <div class="sport-info-item">📅 <span>${prog.days}</span></div>
-      </div>
-    `;
-    card.addEventListener('click', () => openSportModal(prog));
-    container.appendChild(card);
-  });
+function buildSportCard(prog, isCoachAssigned) {
+  const isSaved = userData.savedSport.includes(prog.id);
+  const days = DAY_KEYS.map(d => {
+    const focus  = prog.week[d]?.focus || '';
+    const isRest = focus.includes('Відпочинок') || focus.includes('😴');
+    return `<span class="day-chip ${isRest ? 'rest' : ''}">${getDayShort(d)}</span>`;
+  }).join('');
+
+  const card = document.createElement('div');
+  card.className = `sport-card${isCoachAssigned ? ' coach-assigned-card' : ''}`;
+  card.innerHTML = `
+    <div class="card-top">
+      <div class="card-name">${prog.name}</div>
+      <button class="card-saved-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveSport('${prog.id}',event)">
+        ${isSaved ? '⭐' : '☆'}
+      </button>
+    </div>
+    <div class="card-badges">
+      <span class="badge badge-orange">📊 ${prog.level}</span>
+      <span class="badge badge-blue">⏱ ${prog.duration}</span>
+      <span class="badge badge-green">😴 Відпочинок ${prog.rest}</span>
+      ${isCoachAssigned ? '<span class="badge badge-coach">🏋️ Тренер</span>' : ''}
+    </div>
+    <div class="sport-days-row">${days}</div>
+    <div class="sport-info-row">
+      <div class="sport-info-item">📅 <span>${prog.days}</span></div>
+    </div>
+  `;
+  card.addEventListener('click', () => openSportModal(prog));
+  return card;
 }
 
 function getDayShort(d) {
@@ -1741,11 +1788,17 @@ function renderStudentCard(student) {
   `;
 }
 
+// ─── Поточні дані відкритого учня ─────────────────────────
+let currentStudentData  = null;
+let currentStudentTab   = 'notes'; // 'notes' | 'nutrition' | 'sport'
+// Тимчасовий стан вибору планів тренером
+let draftNutrition = [];
+let draftSport     = [];
+
 async function openStudent(studentId) {
   currentStudentId = studentId;
   document.getElementById('coachStudentsList').classList.add('hidden');
-  const viewEl = document.getElementById('coachStudentView');
-  viewEl.classList.remove('hidden');
+  document.getElementById('coachStudentView').classList.remove('hidden');
 
   const contentEl = document.getElementById('coachStudentContent');
   contentEl.innerHTML = '<div class="coach-loading">Завантаження...</div>';
@@ -1757,65 +1810,205 @@ async function openStudent(studentId) {
       contentEl.innerHTML = `<div class="coach-error">${studentData.error}</div>`;
       return;
     }
-
+    currentStudentData = studentData;
     const p = studentData.profile || {};
     document.getElementById('coachStudentName').textContent = p.name || 'Учень';
 
-    const corrections = studentData.corrections || {};
+    // ініціалізуємо чернетки з поточних корективів
+    const corr = studentData.corrections || {};
+    draftNutrition = [...(corr.assignedNutrition || [])];
+    draftSport     = [...(corr.assignedSport || [])];
 
-    contentEl.innerHTML = `
-      <div class="coach-student-profile-card">
-        <div class="coach-sp-row"><span>Ім'я</span><b>${p.name || '—'}</b></div>
-        <div class="coach-sp-row"><span>Стать</span><b>${p.gender === 'female' ? '♀ Жінка' : '♂ Чоловік'}</b></div>
-        <div class="coach-sp-row"><span>Вік</span><b>${p.age || '—'} р</b></div>
-        <div class="coach-sp-row"><span>Вага</span><b>${p.weight || '—'} кг</b></div>
-        <div class="coach-sp-row"><span>Зріст</span><b>${p.height || '—'} см</b></div>
-      </div>
-
-      <div class="coach-corrections-section">
-        <div class="coach-section-title">✏️ Корективи для учня</div>
-        <p class="coach-corrections-hint">Ці нотатки учень побачить у своїх планах з позначкою "від тренера"</p>
-
-        <div class="coach-corr-block">
-          <label class="coach-corr-label">🥗 Харчування — рекомендації</label>
-          <textarea class="coach-corr-textarea" id="corrNutrition" placeholder="Напр.: виключити глютен, додати більше білка ввечері...">${corrections.nutritionNote || ''}</textarea>
-        </div>
-
-        <div class="coach-corr-block">
-          <label class="coach-corr-label">💪 Тренування — рекомендації</label>
-          <textarea class="coach-corr-textarea" id="corrSport" placeholder="Напр.: збільшити кількість підходів у присіданнях до 5...">${corrections.sportNote || ''}</textarea>
-        </div>
-
-        <div class="coach-corr-block">
-          <label class="coach-corr-label">📋 Загальне повідомлення учню</label>
-          <textarea class="coach-corr-textarea" id="corrGeneral" placeholder="Загальні рекомендації, мотивація...">${corrections.generalNote || ''}</textarea>
-        </div>
-
-        <button class="coach-save-btn" onclick="saveStudentCorrections()">💾 Зберегти корективи</button>
-      </div>
-    `;
+    currentStudentTab = 'notes';
+    renderStudentView();
   } catch {
     contentEl.innerHTML = '<div class="coach-error">Помилка завантаження</div>';
   }
 }
 
-async function saveStudentCorrections() {
-  const corrections = {
-    nutritionNote: document.getElementById('corrNutrition').value.trim(),
-    sportNote: document.getElementById('corrSport').value.trim(),
-    generalNote: document.getElementById('corrGeneral').value.trim(),
-    updatedAt: new Date().toISOString(),
-  };
+function renderStudentView() {
+  if (!currentStudentData) return;
+  const contentEl = document.getElementById('coachStudentContent');
+  const p = currentStudentData.profile || {};
+  const corr = currentStudentData.corrections || {};
 
+  const tabs = [
+    { id: 'notes',     label: '📋 Нотатки' },
+    { id: 'nutrition', label: '🥗 Харчування' },
+    { id: 'sport',     label: '💪 Тренування' },
+  ];
+
+  contentEl.innerHTML = `
+    <div class="coach-student-profile-card">
+      <div class="coach-sp-row"><span>Ім'я</span><b>${p.name || '—'}</b></div>
+      <div class="coach-sp-row"><span>Стать</span><b>${p.gender === 'female' ? '♀ Жінка' : '♂ Чоловік'}</b></div>
+      <div class="coach-sp-row"><span>Вік / Вага / Зріст</span><b>${p.age || '—'} р · ${p.weight || '—'} кг · ${p.height || '—'} см</b></div>
+    </div>
+
+    <div class="coach-tabs">
+      ${tabs.map(t => `
+        <button class="coach-tab ${currentStudentTab === t.id ? 'active' : ''}"
+          onclick="switchStudentTab('${t.id}')">${t.label}</button>
+      `).join('')}
+    </div>
+
+    <div id="coachTabContent"></div>
+  `;
+
+  renderStudentTab();
+}
+
+function switchStudentTab(tab) {
+  currentStudentTab = tab;
+  document.querySelectorAll('.coach-tab').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(
+      tab === 'notes' ? 'Нотатки' : tab === 'nutrition' ? 'Харчування' : 'Тренування'
+    ));
+  });
+  renderStudentTab();
+}
+
+function renderStudentTab() {
+  const el = document.getElementById('coachTabContent');
+  if (!el) return;
+  if      (currentStudentTab === 'notes')     renderNotesTab_coach(el);
+  else if (currentStudentTab === 'nutrition') renderNutritionPicker(el);
+  else if (currentStudentTab === 'sport')     renderSportPicker(el);
+}
+
+// ── Вкладка Нотатки ──────────────────────────────────────
+function renderNotesTab_coach(el) {
+  const corr = currentStudentData.corrections || {};
+  el.innerHTML = `
+    <div class="coach-corrections-section">
+      <p class="coach-corrections-hint">Нотатки відображаються учню в банері при вході в додаток.</p>
+
+      <div class="coach-corr-block">
+        <label class="coach-corr-label">📋 Загальне повідомлення</label>
+        <textarea class="coach-corr-textarea" id="corrGeneral"
+          placeholder="Мотивація, загальні рекомендації...">${corr.generalNote || ''}</textarea>
+      </div>
+      <div class="coach-corr-block">
+        <label class="coach-corr-label">🥗 Нотатка щодо харчування</label>
+        <textarea class="coach-corr-textarea" id="corrNutrition"
+          placeholder="Напр.: виключити глютен, більше білка ввечері...">${corr.nutritionNote || ''}</textarea>
+      </div>
+      <div class="coach-corr-block">
+        <label class="coach-corr-label">💪 Нотатка щодо тренувань</label>
+        <textarea class="coach-corr-textarea" id="corrSport"
+          placeholder="Напр.: збільшити кількість підходів у присіданнях...">${corr.sportNote || ''}</textarea>
+      </div>
+
+      <button class="coach-save-btn" onclick="saveStudentNotes()">💾 Зберегти нотатки</button>
+    </div>
+  `;
+}
+
+async function saveStudentNotes() {
+  const corr = currentStudentData.corrections || {};
+  corr.generalNote   = document.getElementById('corrGeneral').value.trim();
+  corr.nutritionNote = document.getElementById('corrNutrition').value.trim();
+  corr.sportNote     = document.getElementById('corrSport').value.trim();
+  corr.updatedAt     = new Date().toISOString();
+  await patchCorrections(corr);
+}
+
+// ── Вкладка Харчування ────────────────────────────────────
+function renderNutritionPicker(el) {
+  const p = currentStudentData.profile || {};
+  const gender = p.gender || 'male';
+  const allMenus = gender === 'female' ? NUTRITION_MENUS_FEMALE : NUTRITION_MENUS_MALE;
+  const allFlat  = [...(allMenus.mass||[]), ...(allMenus.cut||[]), ...(allMenus.balance||[])];
+
+  const count = draftNutrition.length;
+  el.innerHTML = `
+    <div class="coach-corrections-section">
+      <p class="coach-corrections-hint">Оберіть меню харчування для учня. Вибрані плани з'являться у нього у секції "Від тренера 🏋️".</p>
+      <div class="coach-pick-counter">${count > 0 ? `✅ Обрано: ${count}` : 'Нічого не обрано'}</div>
+      <div class="coach-pick-list">
+        ${allFlat.map(m => renderPickCard(m, draftNutrition.includes(m.id), 'nutrition')).join('')}
+      </div>
+      <button class="coach-save-btn" style="margin-top:16px" onclick="saveStudentNutrition()">
+        💾 Зберегти харчування (${count})
+      </button>
+    </div>
+  `;
+}
+
+function renderPickCard(item, selected, type) {
+  const isMenu = type === 'nutrition';
+  const badge  = isMenu
+    ? `<span class="badge badge-green">🔥 ${item.kcal}</span><span class="badge badge-blue">💪 ${item.protein}</span>`
+    : `<span class="badge badge-orange">📊 ${item.level}</span><span class="badge badge-blue">⏱ ${item.duration}</span>`;
+
+  return `
+    <div class="coach-pick-card ${selected ? 'selected' : ''}"
+         onclick="togglePickItem('${item.id}','${type}')">
+      <div class="coach-pick-check">${selected ? '✅' : '○'}</div>
+      <div class="coach-pick-info">
+        <div class="coach-pick-name">${item.name}</div>
+        <div class="coach-pick-badges">${badge}</div>
+      </div>
+    </div>
+  `;
+}
+
+function togglePickItem(id, type) {
+  const arr = type === 'nutrition' ? draftNutrition : draftSport;
+  const idx = arr.indexOf(id);
+  if (idx === -1) arr.push(id);
+  else arr.splice(idx, 1);
+  // перерендеримо лише вкладку
+  renderStudentTab();
+}
+
+async function saveStudentNutrition() {
+  const corr = currentStudentData.corrections || {};
+  corr.assignedNutrition = [...draftNutrition];
+  corr.updatedAt = new Date().toISOString();
+  await patchCorrections(corr);
+}
+
+// ── Вкладка Тренування ────────────────────────────────────
+function renderSportPicker(el) {
+  const allFlat = [...SPORT_PROGRAMS.mass, ...SPORT_PROGRAMS.cut, ...SPORT_PROGRAMS.general];
+  const count = draftSport.length;
+  el.innerHTML = `
+    <div class="coach-corrections-section">
+      <p class="coach-corrections-hint">Оберіть програми тренувань для учня. Вибрані програми з'являться у нього у секції "Від тренера 🏋️".</p>
+      <div class="coach-pick-counter">${count > 0 ? `✅ Обрано: ${count}` : 'Нічого не обрано'}</div>
+      <div class="coach-pick-list">
+        ${allFlat.map(p => renderPickCard(p, draftSport.includes(p.id), 'sport')).join('')}
+      </div>
+      <button class="coach-save-btn" style="margin-top:16px" onclick="saveStudentSport()">
+        💾 Зберегти тренування (${count})
+      </button>
+    </div>
+  `;
+}
+
+async function saveStudentSport() {
+  const corr = currentStudentData.corrections || {};
+  corr.assignedSport = [...draftSport];
+  corr.updatedAt = new Date().toISOString();
+  await patchCorrections(corr);
+}
+
+// ── Спільна функція збереження корективів ─────────────────
+async function patchCorrections(corr) {
   try {
     const res = await fetch(`/api/coach/${currentCoach.id}/corrections/${currentStudentId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(corrections),
+      body: JSON.stringify(corr),
     });
     const data = await res.json();
-    if (data.ok) showToast('✅ Корективи збережено!');
-    else showToast('❌ Помилка збереження');
+    if (data.ok) {
+      currentStudentData.corrections = corr;
+      showToast('✅ Збережено!');
+    } else {
+      showToast('❌ Помилка збереження');
+    }
   } catch {
     showToast('❌ Помилка');
   }

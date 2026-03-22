@@ -2044,6 +2044,62 @@ body.theme-female .goal-selector-btn.active {
 .coach-loading { padding: 32px; text-align: center; color: var(--tg-hint); }
 .coach-error   { padding: 32px; text-align: center; color: #f87171; }
 
+/* ── Coach student tabs ── */
+.coach-tabs {
+  display: flex; gap: 4px; padding: 0 16px 12px;
+  border-bottom: 1px solid var(--card-border); margin-bottom: 4px;
+}
+.coach-tab {
+  flex: 1; padding: 9px 4px; border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border); background: var(--card-bg);
+  color: var(--tg-hint); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .2s;
+}
+.coach-tab.active {
+  background: var(--accent); border-color: var(--accent);
+  color: #000;
+}
+
+/* ── Plan picker ── */
+.coach-pick-counter {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  margin-bottom: 12px;
+}
+.coach-pick-list { display: flex; flex-direction: column; gap: 8px; }
+.coach-pick-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card-bg); border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.coach-pick-card.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--card-bg));
+}
+.coach-pick-check { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+.coach-pick-info  { flex: 1; min-width: 0; }
+.coach-pick-name  { font-size: 14px; font-weight: 600; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.coach-pick-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* ── "Від тренера" section in student app ── */
+.coach-assigned-section {
+  margin-bottom: 8px;
+}
+.coach-assigned-title {
+  font-size: 13px; font-weight: 700; color: #a78bfa;
+  padding: 8px 0 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.coach-assigned-card {
+  border-color: rgba(139,92,246,.45) !important;
+  background: color-mix(in srgb, #8b5cf6 6%, var(--card-bg)) !important;
+}
+.badge-coach {
+  background: rgba(139,92,246,.18); color: #a78bfa;
+  border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+}
+
 /* Coach banner for students */
 .coach-banner {
   margin: 12px 16px;
