@@ -371,6 +371,15 @@ function obGoStep(n) {
   obCurrentStep = n;
 }
 
+function obBackToRole() {
+  // Ховаємо онбординг, показуємо вибір ролі
+  document.getElementById('onboardingOverlay').classList.add('hidden');
+  const roleOverlay = document.getElementById('roleOverlay');
+  roleOverlay.classList.remove('hidden');
+  roleOverlay.style.display = 'flex';
+  showRoleScreen();
+}
+
 function obNameNext() {
   const val = document.getElementById('obNameInput').value.trim();
   obTemp.name = val || (tg?.initDataUnsafe?.user?.first_name || '');
@@ -2029,4 +2038,26 @@ function copyInviteCode() {
   }).catch(() => {
     showToast(`Код: ${code}`);
   });
+}
+
+// ─── QR Modal ────────────────────────────────────────────────
+function openQrModal() {
+  if (!currentCoach) return;
+  const code = currentCoach.inviteCode;
+
+  // Генеруємо QR через безкоштовний API
+  const qrData = encodeURIComponent(code);
+  const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${qrData}`;
+
+  document.getElementById('qrCodeWrap').innerHTML =
+    `<img src="${qrUrl}" alt="QR" class="qr-image" />`;
+  document.getElementById('qrInviteCodeText').textContent = code;
+
+  document.getElementById('qrOverlay').classList.remove('hidden');
+  document.getElementById('qrModal').classList.remove('hidden');
+}
+
+function closeQrModal() {
+  document.getElementById('qrOverlay').classList.add('hidden');
+  document.getElementById('qrModal').classList.add('hidden');
 }

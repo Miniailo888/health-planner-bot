@@ -90,6 +90,7 @@
 
       <!-- Step 1: Name -->
       <div class="ob-step active" id="ob-step-1">
+        <button class="ob-back-btn" onclick="obBackToRole()">← Назад</button>
         <div class="ob-step-icon">👋</div>
         <h2 class="ob-title">Вітаємо в Health Planner!</h2>
         <p class="ob-subtitle">Як вас звати? Введіть ваше ім'я</p>
@@ -98,17 +99,14 @@
           <button class="ob-name-btn" onclick="obNameNext()">Далі →</button>
         </div>
         <div class="ob-step-indicator">
-          <span class="ob-dot active"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
+          <span class="ob-dot active"></span><span class="ob-dot"></span><span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
         </div>
       </div>
 
       <!-- Step 2: Gender -->
       <div class="ob-step" id="ob-step-2">
+        <button class="ob-back-btn" onclick="obGoStep(1)">← Назад</button>
         <div class="ob-step-icon">👤</div>
         <h2 class="ob-title">Оберіть стать</h2>
         <p class="ob-subtitle">Для персоналізованих рекомендацій</p>
@@ -123,17 +121,14 @@
           </button>
         </div>
         <div class="ob-step-indicator">
-          <span class="ob-dot"></span>
-          <span class="ob-dot active"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot active"></span><span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
         </div>
       </div>
 
       <!-- Step 3: Age -->
       <div class="ob-step" id="ob-step-3">
+        <button class="ob-back-btn" onclick="obGoStep(2)">← Назад</button>
         <div class="ob-step-icon">🎂</div>
         <h2 class="ob-title">Ваш вік</h2>
         <p class="ob-subtitle">Оберіть вашу вікову групу</p>
@@ -148,17 +143,14 @@
           <button class="ob-age-btn" data-age="50" onclick="selectAge(50)">50</button>
         </div>
         <div class="ob-step-indicator">
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot active"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot active"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
         </div>
       </div>
 
       <!-- Step 4: Weight -->
       <div class="ob-step" id="ob-step-4">
+        <button class="ob-back-btn" onclick="obGoStep(3)">← Назад</button>
         <div class="ob-step-icon">⚖️</div>
         <h2 class="ob-title">Ваша вага</h2>
         <p class="ob-subtitle">Оберіть вашу поточну вагу</p>
@@ -173,17 +165,14 @@
           <button class="ob-weight-btn" data-weight="120" onclick="selectWeight(120)">120 кг</button>
         </div>
         <div class="ob-step-indicator">
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot active"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
+          <span class="ob-dot active"></span><span class="ob-dot"></span><span class="ob-dot"></span>
         </div>
       </div>
 
       <!-- Step 5: Height -->
       <div class="ob-step" id="ob-step-5">
+        <button class="ob-back-btn" onclick="obGoStep(4)">← Назад</button>
         <div class="ob-step-icon">📏</div>
         <h2 class="ob-title">Ваш зріст</h2>
         <p class="ob-subtitle">Оберіть ваш зріст</p>
@@ -201,29 +190,22 @@
           <button class="ob-height-btn" data-height="200" onclick="selectHeight(200)">200 см</button>
         </div>
         <div class="ob-step-indicator">
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot active"></span>
-          <span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot active"></span><span class="ob-dot"></span>
         </div>
       </div>
 
       <!-- Step 6: Results -->
       <div class="ob-step" id="ob-step-6">
+        <button class="ob-back-btn" onclick="obGoStep(5)">← Назад</button>
         <div class="ob-step-icon">🎯</div>
         <h2 class="ob-title">Ваш профіль готовий!</h2>
         <p class="ob-subtitle">Ось ваші персональні показники</p>
         <div class="ob-results" id="obResults"></div>
         <button class="ob-start-btn" onclick="finishOnboarding()">🚀 Почати!</button>
         <div class="ob-step-indicator">
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot"></span>
-          <span class="ob-dot active"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
+          <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot active"></span>
         </div>
       </div>
 
@@ -387,9 +369,12 @@
         <span>🏋️</span>
         <span id="coachHeaderName">Тренер</span>
       </div>
-      <div class="coach-invite-chip" id="coachInviteChip" onclick="copyInviteCode()">
-        <span>🔗</span>
-        <span id="coachInviteCode">HP-......</span>
+      <div class="coach-header-actions">
+        <div class="coach-invite-chip" id="coachInviteChip" onclick="copyInviteCode()">
+          <span>🔗</span>
+          <span id="coachInviteCode">HP-......</span>
+        </div>
+        <button class="coach-qr-btn" onclick="openQrModal()" title="QR-код">⬛ QR</button>
       </div>
     </header>
 
@@ -489,6 +474,21 @@
 
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
+
+  <!-- QR Modal -->
+  <div class="qr-overlay hidden" id="qrOverlay" onclick="closeQrModal()"></div>
+  <div class="qr-modal hidden" id="qrModal">
+    <div class="qr-modal-header">
+      <span>QR-код запрошення</span>
+      <button onclick="closeQrModal()">✕</button>
+    </div>
+    <div class="qr-modal-body">
+      <div class="qr-code-wrap" id="qrCodeWrap"></div>
+      <div class="qr-invite-code" id="qrInviteCodeText"></div>
+      <p class="qr-hint">Учень сканує QR-код і автоматично підключається до вас</p>
+      <button class="qr-copy-btn" onclick="copyInviteCode()">📋 Скопіювати код</button>
+    </div>
+  </div>
 
   <script src="plans.js"></script>
   <script src="app.js"></script>
