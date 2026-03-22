@@ -1,9 +1,10 @@
 const express = require('express');
 const path = require('path');
 const {
-  getUser, saveUser,
+  getUser, saveUser, deleteUser,
   createCoach, getCoachByTelegramId, getCoachByInviteCode,
   linkStudentToCoach, getCoachStudents,
+  removeStudentFromCoach,
   saveCorrections, getStudentFull, saveStudentFull,
 } = require('./storage');
 
@@ -83,6 +84,21 @@ app.post('/api/student/link', async (req, res) => {
     const { userId, inviteCode } = req.body;
     if (!userId || !inviteCode) return res.json({ error: 'Missing data' });
     res.json(await linkStudentToCoach(userId, inviteCode));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── DELETE USER ─────────────────────────────────────────────────────────────
+app.delete('/api/user/:userId', async (req, res) => {
+  try {
+    await deleteUser(req.params.userId);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── REMOVE STUDENT FROM COACH ───────────────────────────────────────────────
+app.delete('/api/coach/:coachId/student/:studentId', async (req, res) => {
+  try {
+    res.json(await removeStudentFromCoach(req.params.coachId, req.params.studentId));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -156,6 +156,17 @@ document.getElementById('userBadge').textContent = profile.name || userName;
 appInit();
 
 async function appInit() {
+  // Якщо роль передана через URL параметр від бота — зберігаємо її
+  const urlRole = new URLSearchParams(window.location.search).get('role');
+  if (urlRole && ['guest', 'coach', 'student'].includes(urlRole) && !userData.role) {
+    userData.role = urlRole;
+    fetch(`/api/user/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: urlRole }),
+    }).catch(() => {});
+  }
+
   // Синхронізуємо з сервером (це дає кросс-пристрою підтримку)
   const serverHasProfile = await syncFromServer();
 
@@ -1288,7 +1299,10 @@ function renderProfile() {
 
         <button class="profile-save-btn" onclick="saveProfileAndRefresh()">💾 Зберегти зміни</button>
 
-        <button class="profile-reset-btn" onclick="confirmResetProfile()">🔄 Створити новий профіль</button>
+        <div class="profile-account-actions">
+          <button class="profile-new-account-btn" onclick="confirmResetProfile()">🔄 Новий акаунт</button>
+          <button class="profile-delete-btn" onclick="confirmDeleteAccount()">🗑 Видалити акаунт</button>
+        </div>
       </div>
     </div>
   `;
@@ -1308,26 +1322,51 @@ function profileSetGender(g, btn) {
 }
 
 function confirmResetProfile() {
-  if (!confirm('Скинути профіль і вибрати нову роль? Всі дані профілю буде видалено.')) return;
-  // Clear profile and role
+  if (!confirm('Створити новий акаунт? Поточна роль буде скинута, дані збережуться.')) return;
   profile = { name: '', gender: null, age: 25, weight: 70, height: 175, goal: 'balance' };
   userData.role    = null;
   userData.coachId = null;
   saveProfile();
   saveData();
-  // Sync reset to server
   fetch(`/api/user/${userId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ role: null, coachId: null, profile }),
   }).catch(() => {});
-  // Reset theme and show role selection
   document.body.classList.remove('theme-male', 'theme-female');
-  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('coachDashboard').classList.add('hidden');
+  document.getElementById('appMain').classList.remove('hidden');
+  document.getElementById('bottomNav').classList.remove('hidden');
+  const h = document.getElementById('appHeader');
+  if (h) h.classList.remove('hidden');
   const roleOvl = document.getElementById('roleOverlay');
   roleOvl.classList.remove('hidden');
   roleOvl.style.display = 'flex';
-  if (typeof showRoleScreen === 'function') showRoleScreen();
+  showRoleScreen();
+}
+
+async function confirmDeleteAccount() {
+  if (!confirm('Видалити акаунт? Всі ваші дані буде назавжди видалено.')) return;
+  try {
+    await fetch(`/api/user/${userId}`, { method: 'DELETE' });
+  } catch {}
+  // Очищаємо localStorage
+  localStorage.removeItem(`hp_${userId}`);
+  localStorage.removeItem(`hp_profile_${userId}`);
+  // Скидаємо стан
+  userData = { savedNutrition: [], savedSport: [], savedWeek: null, mealTimes: {}, sportTimes: {}, weekTimes: {}, selectedSnacks: {}, mealOptions: {} };
+  profile  = { name: '', gender: null, age: 25, weight: 70, height: 175, goal: 'balance' };
+  document.body.classList.remove('theme-male', 'theme-female');
+  document.getElementById('coachDashboard').classList.add('hidden');
+  document.getElementById('appMain').classList.remove('hidden');
+  document.getElementById('bottomNav').classList.remove('hidden');
+  const h = document.getElementById('appHeader');
+  if (h) h.classList.remove('hidden');
+  const roleOvl = document.getElementById('roleOverlay');
+  roleOvl.classList.remove('hidden');
+  roleOvl.style.display = 'flex';
+  showRoleScreen();
+  showToast('✅ Акаунт видалено');
 }
 
 function profileAdjust(key, delta) {
@@ -1793,12 +1832,40 @@ function deleteCurrentNote() {
 let currentCoach = null;
 let currentStudentId = null;
 
+function skipToMainMenu() {
+  userData.role = userData.role || 'coach';
+  hideAllOverlays();
+  applyTheme(profile.gender || 'male');
+  if (!profile.gender) {
+    document.getElementById('onboardingOverlay').style.display = 'flex';
+  } else {
+    bootApp();
+  }
+}
+
+function backToMainApp() {
+  document.getElementById('coachDashboard').classList.add('hidden');
+  document.getElementById('appMain').classList.remove('hidden');
+  document.getElementById('bottomNav').classList.remove('hidden');
+  const h = document.getElementById('appHeader');
+  if (h) h.classList.remove('hidden');
+}
+
 function launchCoachDashboard(coach) {
   currentCoach = coach;
+  // Спочатку запускаємо звичайне меню
+  applyTheme(profile.gender || 'male');
+  if (!profile.gender) {
+    document.getElementById('onboardingOverlay').style.display = 'flex';
+  } else {
+    bootApp();
+  }
+  // Потім показуємо кабінет тренера поверх
   document.getElementById('coachDashboard').classList.remove('hidden');
   document.getElementById('appMain').classList.add('hidden');
   document.getElementById('bottomNav').classList.add('hidden');
-  document.getElementById('appHeader') && document.getElementById('appHeader').classList.add('hidden');
+  const h = document.getElementById('appHeader');
+  if (h) h.classList.add('hidden');
 
   document.getElementById('coachHeaderName').textContent = coach.name;
   document.getElementById('coachInviteCode').textContent = coach.inviteCode;
@@ -1863,10 +1930,24 @@ function renderStudentCard(student) {
       </div>
       <div class="coach-student-right">
         ${hasCorrections ? '<span class="coach-correction-badge">✏️</span>' : ''}
+        <button class="coach-remove-student-btn" onclick="event.stopPropagation(); removeStudent('${student.id}')" title="Видалити учня">🗑</button>
         <span class="coach-student-arrow">›</span>
       </div>
     </div>
   `;
+}
+
+async function removeStudent(studentId) {
+  if (!confirm('Видалити цього учня зі списку?')) return;
+  try {
+    const res = await fetch(`/api/coach/${currentCoach.id}/student/${studentId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('✅ Учня видалено');
+    loadStudentsList();
+  } catch {
+    showToast('❌ Помилка видалення');
+  }
 }
 
 // ─── Поточні дані відкритого учня ─────────────────────────
@@ -2134,4 +2215,67 @@ function openQrModal() {
 function closeQrModal() {
   document.getElementById('qrOverlay').classList.add('hidden');
   document.getElementById('qrModal').classList.add('hidden');
+}
+
+// ─── QR Scanner (for students) ───────────────────────────────
+let qrScanStream = null;
+let qrScanAnimId = null;
+
+async function openQrScanner() {
+  const overlay = document.getElementById('qrScanOverlay');
+  const modal   = document.getElementById('qrScanModal');
+  const errEl   = document.getElementById('qrScanError');
+  errEl.classList.add('hidden');
+  errEl.textContent = '';
+  overlay.classList.remove('hidden');
+  modal.classList.remove('hidden');
+
+  try {
+    qrScanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    const video = document.getElementById('qrScanVideo');
+    video.srcObject = qrScanStream;
+    video.play();
+    video.addEventListener('loadedmetadata', startScanLoop, { once: true });
+  } catch (e) {
+    errEl.textContent = '❌ Немає доступу до камери. Дозвольте доступ у налаштуваннях.';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function startScanLoop() {
+  const video  = document.getElementById('qrScanVideo');
+  const canvas = document.getElementById('qrScanCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  function tick() {
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert',
+      });
+      if (code && code.data) {
+        const val = code.data.trim().toUpperCase();
+        if (/^HP-[A-Z0-9]{6}$/.test(val)) {
+          closeQrScanner();
+          document.getElementById('inviteCodeInput').value = val;
+          validateInviteCode();
+          return;
+        }
+      }
+    }
+    qrScanAnimId = requestAnimationFrame(tick);
+  }
+  qrScanAnimId = requestAnimationFrame(tick);
+}
+
+function closeQrScanner() {
+  if (qrScanAnimId) { cancelAnimationFrame(qrScanAnimId); qrScanAnimId = null; }
+  if (qrScanStream) { qrScanStream.getTracks().forEach(t => t.stop()); qrScanStream = null; }
+  document.getElementById('qrScanOverlay').classList.add('hidden');
+  document.getElementById('qrScanModal').classList.add('hidden');
 }

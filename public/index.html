@@ -64,6 +64,7 @@
         <button class="ob-name-btn coach-btn" onclick="registerCoach()">Зареєструватись →</button>
       </div>
       <div class="role-error hidden" id="coachRegError"></div>
+      <button class="role-skip-btn" onclick="skipToMainMenu()">Пропустити →</button>
     </div>
 
     <!-- ── Введення коду учнем ── -->
@@ -78,6 +79,7 @@
           oninput="this.value=this.value.toUpperCase()" />
         <button class="ob-name-btn student-btn" onclick="validateInviteCode()">Підключитись →</button>
       </div>
+      <button class="qr-scan-open-btn" onclick="openQrScanner()">📷 Сканувати QR-код</button>
       <div class="role-error hidden" id="studentRegError"></div>
       <div class="invite-coach-found hidden" id="inviteCoachFound"></div>
     </div>
@@ -366,6 +368,7 @@
   <div class="coach-dashboard hidden" id="coachDashboard">
     <header class="coach-header">
       <div class="coach-header-title">
+        <button class="coach-back-main-btn" onclick="backToMainApp()" title="Головне меню">←</button>
         <span>🏋️</span>
         <span id="coachHeaderName">Тренер</span>
       </div>
@@ -490,6 +493,25 @@
     </div>
   </div>
 
+  <!-- QR Scanner Modal -->
+  <div class="qr-overlay hidden" id="qrScanOverlay" onclick="closeQrScanner()"></div>
+  <div class="qr-modal qr-scan-modal hidden" id="qrScanModal">
+    <div class="qr-modal-header">
+      <span>📷 Скануйте QR-код тренера</span>
+      <button onclick="closeQrScanner()">✕</button>
+    </div>
+    <div class="qr-scan-body">
+      <div class="qr-scan-wrap">
+        <video id="qrScanVideo" playsinline autoplay muted></video>
+        <canvas id="qrScanCanvas" style="display:none"></canvas>
+        <div class="qr-scan-frame"></div>
+      </div>
+      <p class="qr-hint">Наведіть камеру на QR-код</p>
+      <div class="qr-scan-error hidden" id="qrScanError"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="plans.js"></script>
   <script src="app.js"></script>
 </body>

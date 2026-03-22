@@ -120,9 +120,29 @@ async function saveStudentFull(coachId, studentId, studentData) {
   return { ok: true };
 }
 
+async function deleteUser(userId) {
+  const tid = String(userId);
+  await User.deleteOne({ telegramId: tid });
+  // Якщо це тренер — видаляємо його Coach запис
+  await Coach.deleteOne({ telegramId: tid });
+}
+
+async function removeStudentFromCoach(coachId, studentId) {
+  const coach = await getCoachById(coachId);
+  if (!coach || !coach.students.includes(String(studentId))) return { error: 'Немає доступу' };
+  await Coach.updateOne({ id: coachId }, { $pull: { students: String(studentId) } });
+  // Знімаємо прив'язку до тренера з боку учня
+  await User.findOneAndUpdate(
+    { telegramId: String(studentId) },
+    { $set: { role: 'guest', coachId: null, corrections: {} } }
+  );
+  return { ok: true };
+}
+
 module.exports = {
-  getUser, saveUser,
+  getUser, saveUser, deleteUser,
   createCoach, getCoachByTelegramId, getCoachByInviteCode, getCoachById,
   linkStudentToCoach, getCoachStudents,
+  removeStudentFromCoach,
   saveCorrections, getStudentFull, saveStudentFull,
 };

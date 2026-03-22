@@ -1619,20 +1619,23 @@ body.theme-female .goal-selector-btn.active {
 }
 .profile-save-btn:active { transform: scale(0.97); opacity: 0.9; }
 
-.profile-reset-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(239,68,68,0.35);
-  background: transparent;
-  color: var(--red);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .2s;
-  margin-top: 8px;
+.profile-account-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;
 }
-.profile-reset-btn:active { transform: scale(0.97); opacity: 0.8; }
+.profile-new-account-btn {
+  padding: 12px 8px; border-radius: var(--radius);
+  border: 1px solid rgba(139,92,246,0.35); background: transparent;
+  color: #a78bfa; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .2s;
+}
+.profile-new-account-btn:active { transform: scale(0.97); opacity: 0.8; }
+.profile-delete-btn {
+  padding: 12px 8px; border-radius: var(--radius);
+  border: 1px solid rgba(239,68,68,0.35); background: transparent;
+  color: var(--red, #ef4444); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .2s;
+}
+.profile-delete-btn:active { transform: scale(0.97); opacity: 0.8; }
 
 /* ═══════════════════════════════════════════════════════════
    ONBOARDING
@@ -1948,6 +1951,11 @@ body.theme-female .goal-selector-btn.active {
   background: none; border: none; padding: 0;
 }
 .role-error { color: #f87171; font-size: 13px; margin-top: 10px; text-align: center; }
+.role-skip-btn {
+  margin-top: 16px; background: none; border: none;
+  color: var(--tg-hint); font-size: 14px; cursor: pointer;
+  text-decoration: underline; padding: 4px;
+}
 .coach-btn   { background: linear-gradient(135deg,#fb923c,#f97316) !important; }
 .student-btn { background: linear-gradient(135deg,#a78bfa,#8b5cf6) !important; }
 .invite-input {
@@ -1984,6 +1992,13 @@ body.theme-female .goal-selector-btn.active {
 .coach-header-title {
   display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800;
 }
+.coach-back-main-btn {
+  background: none; border: none; color: var(--tg-hint);
+  font-size: 20px; font-weight: 700; cursor: pointer;
+  padding: 0 4px; line-height: 1;
+  transition: color .2s;
+}
+.coach-back-main-btn:hover { color: var(--tg-text); }
 .coach-header-actions { display: flex; align-items: center; gap: 8px; }
 .coach-invite-chip {
   display: flex; align-items: center; gap: 6px;
@@ -2048,6 +2063,44 @@ body.theme-female .goal-selector-btn.active {
 }
 .qr-copy-btn:hover { background: rgba(139,92,246,.25); }
 
+/* ─── QR Scanner ───────────────────────────────────────────── */
+.qr-scan-modal { width: min(360px, 95vw); }
+.qr-scan-body {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 16px; gap: 12px;
+}
+.qr-scan-wrap {
+  position: relative; width: 260px; height: 260px;
+  border-radius: 12px; overflow: hidden; background: #000;
+}
+.qr-scan-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.qr-scan-frame {
+  position: absolute; inset: 20px;
+  border: 3px solid #4ade80;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
+  pointer-events: none;
+}
+.qr-scan-frame::before,
+.qr-scan-frame::after {
+  content: ''; position: absolute;
+  width: 24px; height: 24px;
+  border-color: #4ade80; border-style: solid;
+}
+.qr-scan-frame::before { top: -3px; left: -3px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.qr-scan-frame::after  { bottom: -3px; right: -3px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+.qr-scan-error {
+  color: #f87171; font-size: 13px; text-align: center; line-height: 1.4;
+}
+.qr-scan-open-btn {
+  width: 100%; margin-top: 10px; padding: 12px;
+  border-radius: var(--radius-sm); border: 1.5px solid rgba(74,222,128,.4);
+  background: rgba(74,222,128,.1); color: #4ade80;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background .2s;
+}
+.qr-scan-open-btn:hover { background: rgba(74,222,128,.2); }
+
 .coach-body { flex: 1; overflow-y: auto; padding: 16px; }
 .coach-section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
 .coach-invite-bar {
@@ -2075,6 +2128,11 @@ body.theme-female .goal-selector-btn.active {
 .coach-student-stats { font-size: 12px; color: var(--tg-hint); margin-top: 2px; }
 .coach-student-right { display: flex; align-items: center; gap: 8px; }
 .coach-student-arrow { font-size: 22px; color: var(--tg-hint); }
+.coach-remove-student-btn {
+  background: none; border: none; font-size: 16px; cursor: pointer;
+  opacity: 0.5; padding: 4px; border-radius: 6px; transition: opacity .2s, background .2s;
+}
+.coach-remove-student-btn:hover { opacity: 1; background: rgba(239,68,68,.15); }
 .coach-empty {
   display: flex; flex-direction: column; align-items: center;
   padding: 48px 20px; text-align: center;

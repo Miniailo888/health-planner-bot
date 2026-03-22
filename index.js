@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { connectDB } = require('./db');
 const { Telegraf }  = require('telegraf');
-const { mainMenu }  = require('./keyboards');
+const { mainMenu, roleSelect, openAppBtn } = require('./keyboards');
 
 const BOT_TOKEN  = process.env.BOT_TOKEN  || '8273043198:AAF5jP22NngrrujV9jOmhgGCZqRGygSwZxo';
 const WEB_APP_URL = process.env.WEB_APP_URL || 'http://localhost:3000';
@@ -12,7 +12,13 @@ const WEB_APP_URL = process.env.WEB_APP_URL || 'http://localhost:3000';
 
   const bot = new Telegraf(BOT_TOKEN);
 
-  const welcomeText = (name) =>
+  const roleText = (name) =>
+    `👋 Привіт, *${name}*!\n\n` +
+    `🏋️ Ласкаво просимо до *Health Planner*!\n\n` +
+    `Оберіть тип акаунту:`;
+
+  const welcomeText = (name, roleLabel) =>
+    `✅ Ви обрали: *${roleLabel}*\n\n` +
     `👋 Привіт, *${name}*!\n\n` +
     `🏋️ *Health Planner* — твій персональний помічник:\n\n` +
     `🥗 20 збалансованих меню харчування\n` +
@@ -22,16 +28,32 @@ const WEB_APP_URL = process.env.WEB_APP_URL || 'http://localhost:3000';
     `Натисни кнопку нижче щоб відкрити додаток 👇`;
 
   bot.start((ctx) => {
-    ctx.reply(welcomeText(ctx.from.first_name), {
+    ctx.reply(roleText(ctx.from.first_name), {
       parse_mode: 'Markdown',
-      ...mainMenu(WEB_APP_URL),
+      ...roleSelect,
+    });
+  });
+
+  const roleLabels = { role_guest: '👤 Гість', role_coach: '🏋️ Тренер', role_student: '🎓 Учень' };
+  const roleKeys   = { role_guest: 'guest',    role_coach: 'coach',      role_student: 'student' };
+
+  ['role_guest', 'role_coach', 'role_student'].forEach((action) => {
+    bot.action(action, (ctx) => {
+      ctx.answerCbQuery();
+      const name  = ctx.from.first_name;
+      const role  = roleKeys[action];
+      const label = roleLabels[action];
+      ctx.editMessageText(welcomeText(name, label), {
+        parse_mode: 'Markdown',
+        ...openAppBtn(WEB_APP_URL, role),
+      });
     });
   });
 
   bot.command('app',  (ctx) => ctx.reply('Відкрий свій планувальник:', mainMenu(WEB_APP_URL)));
-  bot.command('menu', (ctx) => ctx.reply(welcomeText(ctx.from.first_name), {
+  bot.command('menu', (ctx) => ctx.reply(roleText(ctx.from.first_name), {
     parse_mode: 'Markdown',
-    ...mainMenu(WEB_APP_URL),
+    ...roleSelect,
   }));
 
   bot.launch().then(() => {
