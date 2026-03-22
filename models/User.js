@@ -2,7 +2,7 @@ const { mongoose } = require('../db');
 
 const UserSchema = new mongoose.Schema({
   telegramId: { type: String, required: true, unique: true, index: true },
-  role:    { type: String, default: 'guest' },
+  role:    { type: String, default: null },
   coachId: { type: String, default: null },
 
   profile: {

@@ -1231,17 +1231,6 @@ function renderProfile() {
           </div>
         </div>
 
-        <!-- Gender -->
-        <div class="profile-edit-row">
-          <div class="profile-edit-label">Стать</div>
-          <div class="gender-toggle">
-            <button class="gender-toggle-btn ${profile.gender === 'male' ? 'active' : ''}"
-              onclick="profileSetGender('male',this)">♂ Чоловік</button>
-            <button class="gender-toggle-btn ${profile.gender === 'female' ? 'active' : ''}"
-              onclick="profileSetGender('female',this)">♀ Жінка</button>
-          </div>
-        </div>
-
         <!-- Age -->
         <div class="profile-edit-row">
           <div class="profile-edit-label">Вік</div>
@@ -1298,6 +1287,8 @@ function renderProfile() {
         </div>
 
         <button class="profile-save-btn" onclick="saveProfileAndRefresh()">💾 Зберегти зміни</button>
+
+        <button class="profile-reset-btn" onclick="confirmResetProfile()">🔄 Створити новий профіль</button>
       </div>
     </div>
   `;
@@ -1314,6 +1305,29 @@ function profileSetGender(g, btn) {
   btn.closest('.gender-toggle').querySelectorAll('.gender-toggle-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   applyTheme(g);
+}
+
+function confirmResetProfile() {
+  if (!confirm('Скинути профіль і вибрати нову роль? Всі дані профілю буде видалено.')) return;
+  // Clear profile and role
+  profile = { name: '', gender: null, age: 25, weight: 70, height: 175, goal: 'balance' };
+  userData.role    = null;
+  userData.coachId = null;
+  saveProfile();
+  saveData();
+  // Sync reset to server
+  fetch(`/api/user/${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: null, coachId: null, profile }),
+  }).catch(() => {});
+  // Reset theme and show role selection
+  document.body.classList.remove('theme-male', 'theme-female');
+  document.getElementById('mainApp').classList.add('hidden');
+  const roleOvl = document.getElementById('roleOverlay');
+  roleOvl.classList.remove('hidden');
+  roleOvl.style.display = 'flex';
+  if (typeof showRoleScreen === 'function') showRoleScreen();
 }
 
 function profileAdjust(key, delta) {

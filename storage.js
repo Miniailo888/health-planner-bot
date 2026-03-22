@@ -14,7 +14,7 @@ async function getUser(userId) {
   const tid = String(userId);
   let user = await User.findOne({ telegramId: tid }).lean();
   if (!user) {
-    const created = await User.create({ telegramId: tid, role: 'guest' });
+    const created = await User.create({ telegramId: tid });
     user = created.toObject();
   }
   return user;

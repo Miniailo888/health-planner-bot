@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { connectDB } = require('./db');
 const { Telegraf }  = require('telegraf');
 const { mainMenu }  = require('./keyboards');

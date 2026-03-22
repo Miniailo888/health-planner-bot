@@ -463,57 +463,62 @@ body.theme-female .level-pill.active {
   color: #ff2d78;
 }
 
-/* FEMALE THEME — rich pink-purple gradient */
+/* FEMALE THEME — soft pink-purple */
 body.theme-female {
-  background: linear-gradient(135deg, #2d0a3e 0%, #1a0626 50%, #3d0a2e 100%);
-  --tg-bg: #1a0626;
-  --tg-link: #ff2d78;
-  --tg-button: #ff2d78;
-  --accent: #ff2d78;
-  --accent-2: #c026d3;
-  --card-border: rgba(255,45,120,0.25);
-  --card-bg: rgba(255,255,255,0.06);
+  background: linear-gradient(135deg, #1e0a2a 0%, #120420 50%, #260a1e 100%);
+  --tg-bg: #120420;
+  --tg-link: #d4547a;
+  --tg-button: #d4547a;
+  --accent: #d4547a;
+  --accent-2: #9b22a8;
+  --card-border: rgba(212,84,122,0.2);
+  --card-bg: rgba(255,255,255,0.05);
 }
 body.theme-female::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 15% 15%, rgba(255,45,120,0.18) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 20%, rgba(192,38,211,0.15) 0%, transparent 45%),
-    radial-gradient(ellipse at 50% 80%, rgba(255,45,120,0.1) 0%, transparent 40%);
+    radial-gradient(ellipse at 15% 15%, rgba(212,84,122,0.1) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 20%, rgba(155,34,168,0.08) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 80%, rgba(212,84,122,0.06) 0%, transparent 40%);
   pointer-events: none;
   z-index: 0;
 }
 body.theme-female .logo-text {
-  background: linear-gradient(135deg, #ff2d78, #c026d3);
+  background: linear-gradient(135deg, #d4547a, #9b22a8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 body.theme-female .header-badge {
-  background: linear-gradient(135deg, rgba(255,45,120,0.25), rgba(192,38,211,0.2));
-  border-color: rgba(255,45,120,0.4);
-  color: #ff2d78;
+  background: linear-gradient(135deg, rgba(212,84,122,0.2), rgba(155,34,168,0.15));
+  border-color: rgba(212,84,122,0.3);
+  color: #d4547a;
 }
 body.theme-female .pill.active {
-  background: linear-gradient(135deg, rgba(255,45,120,0.3), rgba(192,38,211,0.2));
-  border-color: rgba(255,45,120,0.6);
-  color: #ff2d78;
+  background: linear-gradient(135deg, rgba(212,84,122,0.22), rgba(155,34,168,0.15));
+  border-color: rgba(212,84,122,0.45);
+  color: #d4547a;
 }
 body.theme-female .btn-primary {
-  background: linear-gradient(135deg, #ff2d78, #c026d3);
+  background: linear-gradient(135deg, #c24870, #8a1e96);
 }
 body.theme-female .week-save-btn {
-  background: linear-gradient(135deg, #ff2d78, #c026d3);
+  background: linear-gradient(135deg, #c24870, #8a1e96);
 }
-body.theme-female .nav-btn.active { color: #ff2d78; }
+body.theme-female .nav-btn.active { color: #d4547a; }
 body.theme-female .ob-gender-card[data-gender="female"].selected {
-  border-color: #ff2d78;
-  background: rgba(255,45,120,0.15);
+  border-color: #d4547a;
+  background: rgba(212,84,122,0.12);
 }
 body.theme-female .ob-start-btn {
-  background: linear-gradient(135deg, #ff2d78, #c026d3) !important;
+  background: linear-gradient(135deg, #c24870, #8a1e96) !important;
+}
+body.theme-female .level-pill.active {
+  background: linear-gradient(135deg, rgba(212,84,122,0.22), rgba(155,34,168,0.15));
+  border-color: rgba(212,84,122,0.45);
+  color: #d4547a;
 }
 
 /* ─── RESET ──────────────────────────────────────────────── */
@@ -1613,6 +1618,21 @@ body.theme-female .goal-selector-btn.active {
   margin-top: 4px;
 }
 .profile-save-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+.profile-reset-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(239,68,68,0.35);
+  background: transparent;
+  color: var(--red);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: 8px;
+}
+.profile-reset-btn:active { transform: scale(0.97); opacity: 0.8; }
 
 /* ═══════════════════════════════════════════════════════════
    ONBOARDING
