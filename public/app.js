@@ -585,6 +585,7 @@ function switchTabTo(tab) {
   const section = document.getElementById(`tab-${tab}`);
   if (section) section.classList.add('active');
 
+  if (tab !== 'profile') stopChatPoll();
   if (tab === 'profile')  renderProfile();
   if (tab === 'vitamins') renderVitamins();
   if (tab === 'cycle')    renderCycleTab();
@@ -1314,6 +1315,13 @@ function renderProfile() {
       </div>
     </div>
   `;
+
+  // Чат з тренером для учня
+  if (userData.role === 'student' && userData.coachId) {
+    const chatContainer = document.createElement('div');
+    document.getElementById('profileContent').appendChild(chatContainer);
+    renderStudentChat(chatContainer);
+  }
 }
 
 function profileSetName(val) {
@@ -1995,6 +2003,7 @@ function renderStudentView() {
     { id: 'notes',     label: '📋 Нотатки' },
     { id: 'nutrition', label: '🥗 Харчування' },
     { id: 'sport',     label: '💪 Тренування' },
+    { id: 'chat',      label: '💬 Чат' },
   ];
 
   contentEl.innerHTML = `
@@ -2007,7 +2016,7 @@ function renderStudentView() {
     <div class="coach-tabs">
       ${tabs.map(t => `
         <button class="coach-tab ${currentStudentTab === t.id ? 'active' : ''}"
-          onclick="switchStudentTab('${t.id}')">${t.label}</button>
+          data-tab="${t.id}" onclick="switchStudentTab('${t.id}')">${t.label}</button>
       `).join('')}
     </div>
 
@@ -2020,9 +2029,7 @@ function renderStudentView() {
 function switchStudentTab(tab) {
   currentStudentTab = tab;
   document.querySelectorAll('.coach-tab').forEach(b => {
-    b.classList.toggle('active', b.textContent.includes(
-      tab === 'notes' ? 'Нотатки' : tab === 'nutrition' ? 'Харчування' : 'Тренування'
-    ));
+    b.classList.toggle('active', b.dataset.tab === tab);
   });
   renderStudentTab();
 }
@@ -2033,6 +2040,7 @@ function renderStudentTab() {
   if      (currentStudentTab === 'notes')     renderNotesTab_coach(el);
   else if (currentStudentTab === 'nutrition') renderNutritionPicker(el);
   else if (currentStudentTab === 'sport')     renderSportPicker(el);
+  else if (currentStudentTab === 'chat')      renderChatTab_coach(el);
 }
 
 // ── Вкладка Нотатки ──────────────────────────────────────
@@ -2058,7 +2066,7 @@ function renderNotesTab_coach(el) {
           placeholder="Напр.: збільшити кількість підходів у присіданнях...">${corr.sportNote || ''}</textarea>
       </div>
 
-      <button class="coach-save-btn" onclick="saveStudentNotes()">💾 Зберегти нотатки</button>
+      <button class="coach-save-btn" onclick="saveStudentNotes()">📤 Відправити учню</button>
     </div>
   `;
 }
@@ -2088,7 +2096,7 @@ function renderNutritionPicker(el) {
         ${allFlat.map(m => renderPickCard(m, draftNutrition.includes(m.id), 'nutrition')).join('')}
       </div>
       <button class="coach-save-btn" style="margin-top:16px" onclick="saveStudentNutrition()">
-        💾 Зберегти харчування (${count})
+        📤 Відправити харчування (${count})
       </button>
     </div>
   `;
@@ -2141,7 +2149,7 @@ function renderSportPicker(el) {
         ${allFlat.map(p => renderPickCard(p, draftSport.includes(p.id), 'sport')).join('')}
       </div>
       <button class="coach-save-btn" style="margin-top:16px" onclick="saveStudentSport()">
-        💾 Зберегти тренування (${count})
+        📤 Відправити тренування (${count})
       </button>
     </div>
   `;
@@ -2381,4 +2389,138 @@ function showInstallOptions() {
   } else {
     showToast('Відкрийте додаток у Chrome і спробуйте знову');
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+//   ЧАТ — ТРЕНЕР ↔ УЧЕНЬ
+// ═══════════════════════════════════════════════════════════
+let chatPollTimer = null;
+let chatLastTs    = null;
+
+// ── Вкладка чату в кабінеті тренера ──────────────────────
+function renderChatTab_coach(el) {
+  el.innerHTML = `
+    <div class="chat-wrap" id="chatWrap">
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-loading">Завантаження...</div>
+      </div>
+      <div class="chat-input-bar">
+        <textarea class="chat-input" id="chatInput" placeholder="Напишіть повідомлення..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('coach');}"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage('coach')">📤</button>
+      </div>
+    </div>
+  `;
+  loadChatMessages('coach');
+  startChatPoll('coach');
+}
+
+async function loadChatMessages(role) {
+  const coachId   = role === 'coach' ? currentCoach?.id : userData.coachId;
+  const studentId = role === 'coach' ? currentStudentId : String(userId);
+  if (!coachId || !studentId) return;
+
+  try {
+    const res  = await fetch(`/api/chat/${coachId}/${studentId}`);
+    const msgs = await res.json();
+    renderMessages(msgs, role);
+    if (msgs.length) chatLastTs = msgs[msgs.length - 1].createdAt;
+  } catch {}
+}
+
+function renderMessages(msgs, role) {
+  const el = document.getElementById('chatMessages');
+  if (!el) return;
+  if (!msgs.length) {
+    el.innerHTML = '<div class="chat-empty">Повідомлень поки немає</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(m => {
+    const mine = m.from === role;
+    const time = new Date(m.createdAt).toLocaleTimeString('uk', { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="chat-msg ${mine ? 'chat-msg-mine' : 'chat-msg-theirs'}">
+        <div class="chat-bubble">${escapeHtml(m.text)}</div>
+        <div class="chat-time">${time}</div>
+      </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function sendChatMessage(role) {
+  const input   = document.getElementById('chatInput');
+  const text    = input?.value.trim();
+  if (!text) return;
+  const coachId   = role === 'coach' ? currentCoach?.id : userData.coachId;
+  const studentId = role === 'coach' ? currentStudentId : String(userId);
+  if (!coachId || !studentId) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  try {
+    await fetch(`/api/chat/${coachId}/${studentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: role, text }),
+    });
+    await loadChatMessages(role);
+  } catch { showToast('❌ Помилка відправки'); }
+}
+
+function startChatPoll(role) {
+  stopChatPoll();
+  chatPollTimer = setInterval(async () => {
+    const coachId   = role === 'coach' ? currentCoach?.id : userData.coachId;
+    const studentId = role === 'coach' ? currentStudentId : String(userId);
+    if (!coachId || !studentId) return;
+    try {
+      const url = chatLastTs
+        ? `/api/chat/${coachId}/${studentId}?since=${encodeURIComponent(chatLastTs)}`
+        : `/api/chat/${coachId}/${studentId}`;
+      const res  = await fetch(url);
+      const msgs = await res.json();
+      if (msgs.length) {
+        chatLastTs = msgs[msgs.length - 1].createdAt;
+        await loadChatMessages(role);
+      }
+    } catch {}
+  }, 5000);
+}
+
+function stopChatPoll() {
+  if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
+  chatLastTs = null;
+}
+
+// Зупиняємо поллінг при переключенні вкладки учня
+const _origSwitchStudentTab = switchStudentTab;
+function switchStudentTab(tab) {
+  if (tab !== 'chat') stopChatPoll();
+  _origSwitchStudentTab(tab);
+}
+
+// ── Чат на стороні учня (в профілі) ──────────────────────
+function renderStudentChat(container) {
+  container.innerHTML = `
+    <div class="student-chat-section">
+      <div class="student-chat-title">💬 Чат з тренером</div>
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-loading">Завантаження...</div>
+        </div>
+        <div class="chat-input-bar">
+          <textarea class="chat-input" id="chatInput" placeholder="Напишіть тренеру..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('student');}"></textarea>
+          <button class="chat-send-btn" onclick="sendChatMessage('student')">📤</button>
+        </div>
+      </div>
+    </div>
+  `;
+  loadChatMessages('student');
+  startChatPoll('student');
 }

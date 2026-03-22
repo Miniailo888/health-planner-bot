@@ -7,6 +7,7 @@ const {
   removeStudentFromCoach,
   saveCorrections, getStudentFull, saveStudentFull,
 } = require('./storage');
+const Chat = require('./models/Chat');
 
 const app = express();
 app.use(express.json());
@@ -99,6 +100,35 @@ app.delete('/api/user/:userId', async (req, res) => {
 app.delete('/api/coach/:coachId/student/:studentId', async (req, res) => {
   try {
     res.json(await removeStudentFromCoach(req.params.coachId, req.params.studentId));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
+app.get('/api/chat/:coachId/:studentId', async (req, res) => {
+  try {
+    const { coachId, studentId } = req.params;
+    const since = req.query.since ? new Date(req.query.since) : null;
+    const chat = await Chat.findOne({ coachId, studentId }).lean();
+    if (!chat) return res.json([]);
+    const msgs = since
+      ? chat.messages.filter(m => new Date(m.createdAt) > since)
+      : chat.messages;
+    res.json(msgs);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/chat/:coachId/:studentId', async (req, res) => {
+  try {
+    const { coachId, studentId } = req.params;
+    const { from, text } = req.body;
+    if (!from || !text?.trim()) return res.json({ error: 'Порожнє повідомлення' });
+    const msg = { from, text: text.trim(), createdAt: new Date() };
+    await Chat.findOneAndUpdate(
+      { coachId, studentId },
+      { $push: { messages: msg } },
+      { upsert: true, new: true }
+    );
+    res.json({ ok: true, msg });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
