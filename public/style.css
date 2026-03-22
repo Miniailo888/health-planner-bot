@@ -1619,6 +1619,45 @@ body.theme-female .goal-selector-btn.active {
 }
 .profile-save-btn:active { transform: scale(0.97); opacity: 0.9; }
 
+/* ─── PWA Install ──────────────────────────────────────────── */
+.pwa-install-banner {
+  position: fixed; bottom: 70px; left: 12px; right: 12px; z-index: 999;
+  background: var(--card-bg); border: 1px solid rgba(74,222,128,.4);
+  border-radius: var(--radius); padding: 12px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  animation: slideUp .3s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity:0 } to { transform: translateY(0); opacity:1 } }
+.pwa-banner-text { display: flex; align-items: center; gap: 8px; font-size: 13px; flex: 1; }
+.pwa-banner-icon { font-size: 20px; }
+.pwa-banner-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.pwa-banner-btns button {
+  padding: 7px 14px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+  font-size: 13px; font-weight: 700;
+  background: #4ade80; color: #000;
+}
+.pwa-banner-btns .pwa-dismiss { background: transparent; color: var(--tg-hint); font-size: 16px; padding: 7px 8px; }
+
+.profile-install-btn {
+  width: 100%; padding: 12px; margin-top: 8px;
+  border-radius: var(--radius); border: 1.5px solid rgba(74,222,128,.4);
+  background: rgba(74,222,128,.1); color: #4ade80;
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: background .2s;
+}
+.profile-install-btn:hover { background: rgba(74,222,128,.2); }
+
+.ios-steps { display: flex; flex-direction: column; gap: 10px; text-align: left; width: 100%; }
+.ios-step {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.05); border-radius: 8px; padding: 10px 12px; font-size: 14px;
+}
+.ios-step span {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #4ade80; color: #000; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px;
+}
+
 .profile-account-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;
 }

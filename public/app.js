@@ -1305,6 +1305,8 @@ function renderProfile() {
 
         <button class="profile-save-btn" onclick="saveProfileAndRefresh()">💾 Зберегти зміни</button>
 
+        <button class="profile-install-btn" onclick="showInstallOptions()">📱 Додати на екран телефону</button>
+
         <div class="profile-account-actions">
           <button class="profile-new-account-btn" onclick="confirmResetProfile()">🔄 Новий акаунт</button>
           <button class="profile-delete-btn" onclick="confirmDeleteAccount()">🗑 Видалити акаунт</button>
@@ -2273,4 +2275,110 @@ function closeQrScanner() {
   if (qrScanStream) { qrScanStream.getTracks().forEach(t => t.stop()); qrScanStream = null; }
   document.getElementById('qrScanOverlay').classList.add('hidden');
   document.getElementById('qrScanModal').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════
+//   PWA — ВСТАНОВЛЕННЯ НА ЕКРАН
+// ═══════════════════════════════════════════════════════════
+let pwaInstallPrompt = null;
+
+// Реєструємо Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// Перехоплюємо prompt (Android/Chrome)
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  pwaInstallPrompt = e;
+  // Показуємо банер
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  if (document.getElementById('pwaInstallBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwaInstallBanner';
+  banner.className = 'pwa-install-banner';
+  banner.innerHTML = `
+    <div class="pwa-banner-text">
+      <span class="pwa-banner-icon">📱</span>
+      <span>Додати <b>Health Planner</b> на екран</span>
+    </div>
+    <div class="pwa-banner-btns">
+      <button onclick="triggerPwaInstall()">Встановити</button>
+      <button class="pwa-dismiss" onclick="document.getElementById('pwaInstallBanner').remove()">✕</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+}
+
+async function triggerPwaInstall() {
+  if (!pwaInstallPrompt) return;
+  pwaInstallPrompt.prompt();
+  const { outcome } = await pwaInstallPrompt.userChoice;
+  pwaInstallPrompt = null;
+  document.getElementById('pwaInstallBanner')?.remove();
+  if (outcome === 'accepted') showToast('✅ Додаток встановлено!');
+}
+
+// Для iOS — інструкція
+function isIos() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isInStandaloneMode() {
+  return window.navigator.standalone === true;
+}
+
+function showIosInstallHint() {
+  const overlay = document.createElement('div');
+  overlay.id = 'iosInstallOverlay';
+  overlay.className = 'qr-overlay';
+  overlay.onclick = closeIosHint;
+
+  const modal = document.createElement('div');
+  modal.id = 'iosInstallModal';
+  modal.className = 'qr-modal';
+  modal.innerHTML = `
+    <div class="qr-modal-header">
+      <span>📱 Додати на екран</span>
+      <button onclick="closeIosHint()">✕</button>
+    </div>
+    <div class="qr-modal-body" style="text-align:center;gap:16px">
+      <div style="font-size:48px">📲</div>
+      <p style="font-size:15px;font-weight:700;margin:0">Встановіть Health Planner</p>
+      <div class="ios-steps">
+        <div class="ios-step"><span>1</span> Натисніть <b>⬆️ Поділитись</b> внизу браузера</div>
+        <div class="ios-step"><span>2</span> Оберіть <b>На екран «Домівка»</b></div>
+        <div class="ios-step"><span>3</span> Натисніть <b>Додати</b></div>
+      </div>
+      <button class="qr-copy-btn" onclick="closeIosHint()">Зрозуміло ✓</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.body.appendChild(modal);
+}
+
+function closeIosHint() {
+  document.getElementById('iosInstallOverlay')?.remove();
+  document.getElementById('iosInstallModal')?.remove();
+}
+
+// Показуємо iOS підказку якщо iOS і ще не встановлено
+if (isIos() && !isInStandaloneMode() && !localStorage.getItem('iosHintShown')) {
+  setTimeout(() => {
+    showIosInstallHint();
+    localStorage.setItem('iosHintShown', '1');
+  }, 3000);
+}
+
+// Функція для кнопки в профілі
+function showInstallOptions() {
+  if (pwaInstallPrompt) {
+    triggerPwaInstall();
+  } else if (isIos()) {
+    showIosInstallHint();
+  } else {
+    showToast('Відкрийте додаток у Chrome і спробуйте знову');
+  }
 }
