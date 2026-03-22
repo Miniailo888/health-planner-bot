@@ -40,6 +40,14 @@ app.post('/api/coach/register', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/coach/by-id/:coachId', async (req, res) => {
+  try {
+    const coach = await require('./storage').getCoachById(req.params.coachId);
+    if (!coach) return res.json({ error: 'not_found' });
+    res.json({ id: coach.id, name: coach.name, inviteCode: coach.inviteCode });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/coach/by-telegram/:telegramId', async (req, res) => {
   try {
     const coach = await getCoachByTelegramId(req.params.telegramId);

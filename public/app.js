@@ -235,8 +235,8 @@ function bootApp() {
   renderSportCards();
   updateNutritionHeroSubtitle();
   updateCycleTabVisibility();
-  // Якщо учень — завантажуємо корективи тренера
   if (userData.role === 'student' && userData.coachId) {
+    document.getElementById('navCoach').classList.remove('hidden');
     loadCoachCorrections();
   }
 }
@@ -247,36 +247,10 @@ async function loadCoachCorrections() {
     const data = await res.json();
     if (data.corrections) {
       userData.corrections = data.corrections;
-      // оновлюємо картки з призначеними планами тренера
       renderNutritionCards();
       renderSportCards();
-      // показуємо банер якщо є нотатки
-      const c = data.corrections;
-      if (c.generalNote || c.nutritionNote || c.sportNote) {
-        showCoachBanner(c);
-      }
     }
   } catch {}
-}
-
-function showCoachBanner(corrections) {
-  if (!corrections.generalNote && !corrections.nutritionNote && !corrections.sportNote) return;
-  const existing = document.getElementById('coachBanner');
-  if (existing) existing.remove();
-
-  const banner = document.createElement('div');
-  banner.id = 'coachBanner';
-  banner.className = 'coach-banner';
-  banner.innerHTML = `
-    <div class="coach-banner-header">
-      <span>🏋️ Повідомлення від тренера</span>
-      <button onclick="document.getElementById('coachBanner').remove()">✕</button>
-    </div>
-    ${corrections.generalNote   ? `<div class="coach-banner-row"><b>📋 Загальне:</b> ${corrections.generalNote}</div>` : ''}
-    ${corrections.nutritionNote ? `<div class="coach-banner-row"><b>🥗 Харчування:</b> ${corrections.nutritionNote}</div>` : ''}
-    ${corrections.sportNote     ? `<div class="coach-banner-row"><b>💪 Тренування:</b> ${corrections.sportNote}</div>` : ''}
-  `;
-  document.getElementById('appMain').prepend(banner);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -585,12 +559,13 @@ function switchTabTo(tab) {
   const section = document.getElementById(`tab-${tab}`);
   if (section) section.classList.add('active');
 
-  if (tab !== 'profile') stopChatPoll();
+  if (tab !== 'profile' && tab !== 'coach') stopChatPoll();
   if (tab === 'profile')  renderProfile();
   if (tab === 'vitamins') renderVitamins();
   if (tab === 'cycle')    renderCycleTab();
   if (tab === 'notes')    renderNotesTab();
   if (tab === 'students') loadStudentsList();
+  if (tab === 'coach')    renderCoachTab();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1316,12 +1291,6 @@ function renderProfile() {
     </div>
   `;
 
-  // Чат з тренером для учня
-  if (userData.role === 'student' && userData.coachId) {
-    const chatContainer = document.createElement('div');
-    document.getElementById('profileContent').appendChild(chatContainer);
-    renderStudentChat(chatContainer);
-  }
 }
 
 function profileSetName(val) {
@@ -2286,6 +2255,116 @@ function closeQrScanner() {
 }
 
 // ═══════════════════════════════════════════════════════════
+//   ВКЛАДКА ТРЕНЕРА (для учня)
+// ═══════════════════════════════════════════════════════════
+let coachInfo = null;
+
+async function renderCoachTab() {
+  const el = document.getElementById('coachTabStudentContent');
+  if (!el) return;
+  el.innerHTML = '<div class="coach-loading" style="padding:32px;text-align:center">Завантаження...</div>';
+
+  // Завантажуємо актуальні дані
+  try {
+    const [userRes, coachRes] = await Promise.all([
+      fetch(`/api/user/${userId}`),
+      coachInfo ? Promise.resolve({ json: () => coachInfo }) : fetch(`/api/coach/by-id/${userData.coachId}`),
+    ]);
+    const userData2 = await userRes.json();
+    if (userData2.corrections) userData.corrections = userData2.corrections;
+    coachInfo = await coachRes.json();
+  } catch {}
+
+  const corr = userData.corrections || {};
+  const c = coachInfo || {};
+
+  // Призначені плани харчування
+  const assignedNutrIds = corr.assignedNutrition || [];
+  const allNutr = [
+    ...(NUTRITION_MENUS_MALE?.mass || []), ...(NUTRITION_MENUS_MALE?.cut || []), ...(NUTRITION_MENUS_MALE?.balance || []),
+    ...(NUTRITION_MENUS_FEMALE?.mass || []), ...(NUTRITION_MENUS_FEMALE?.cut || []), ...(NUTRITION_MENUS_FEMALE?.balance || []),
+  ];
+  const assignedNutr = [...new Map(
+    assignedNutrIds.map(id => allNutr.find(m => m.id === id)).filter(Boolean).map(m => [m.id, m])
+  ).values()];
+
+  // Призначені програми тренувань
+  const assignedSportIds = corr.assignedSport || [];
+  const allSport = [...(SPORT_PROGRAMS?.mass || []), ...(SPORT_PROGRAMS?.cut || []), ...(SPORT_PROGRAMS?.general || [])];
+  const assignedSport = assignedSportIds.map(id => allSport.find(p => p.id === id)).filter(Boolean);
+
+  const hasNotes = corr.generalNote || corr.nutritionNote || corr.sportNote;
+
+  el.innerHTML = `
+    <div class="section-hero coach-student-hero">
+      <div class="hero-icon">🏋️</div>
+      <div class="hero-text">
+        <h2>${c.name || 'Тренер'}</h2>
+        <p>Ваш особистий тренер</p>
+      </div>
+    </div>
+
+    ${hasNotes ? `
+    <div class="coach-notes-card">
+      <div class="coach-notes-title">📋 Нотатки від тренера</div>
+      ${corr.generalNote   ? `<div class="coach-note-row"><span class="coach-note-icon">💬</span><div><b>Загальне</b><p>${corr.generalNote}</p></div></div>` : ''}
+      ${corr.nutritionNote ? `<div class="coach-note-row"><span class="coach-note-icon">🥗</span><div><b>Харчування</b><p>${corr.nutritionNote}</p></div></div>` : ''}
+      ${corr.sportNote     ? `<div class="coach-note-row"><span class="coach-note-icon">💪</span><div><b>Тренування</b><p>${corr.sportNote}</p></div></div>` : ''}
+    </div>` : ''}
+
+    ${assignedNutr.length ? `
+    <div class="coach-assigned-block">
+      <div class="coach-assigned-block-title">🥗 Призначено харчування (${assignedNutr.length})</div>
+      ${assignedNutr.map(m => `
+        <div class="coach-assigned-item">
+          <div class="coach-assigned-item-name">${m.name}</div>
+          <div class="coach-assigned-item-meta">
+            <span class="badge badge-green">🔥 ${m.kcal}</span>
+            <span class="badge badge-blue">💪 ${m.protein}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${assignedSport.length ? `
+    <div class="coach-assigned-block">
+      <div class="coach-assigned-block-title">💪 Призначено тренування (${assignedSport.length})</div>
+      ${assignedSport.map(p => `
+        <div class="coach-assigned-item">
+          <div class="coach-assigned-item-name">${p.name}</div>
+          <div class="coach-assigned-item-meta">
+            <span class="badge badge-orange">📊 ${p.level}</span>
+            <span class="badge badge-blue">⏱ ${p.duration}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${!hasNotes && !assignedNutr.length && !assignedSport.length ? `
+    <div class="coach-empty" style="margin:24px 16px">
+      <div class="coach-empty-icon">💬</div>
+      <div class="coach-empty-title">Очікуємо на тренера</div>
+      <div class="coach-empty-sub">Тренер ще не надіслав матеріали</div>
+    </div>` : ''}
+
+    <div class="coach-chat-section">
+      <div class="coach-chat-title">💬 Чат з тренером</div>
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-loading">Завантаження...</div>
+        </div>
+        <div class="chat-input-bar">
+          <textarea class="chat-input" id="chatInput" placeholder="Напишіть тренеру..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('student');}"></textarea>
+          <button class="chat-send-btn" onclick="sendChatMessage('student')">📤</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  loadChatMessages('student');
+  startChatPoll('student');
+}
+
+// ═══════════════════════════════════════════════════════════
 //   PWA — ВСТАНОВЛЕННЯ НА ЕКРАН
 // ═══════════════════════════════════════════════════════════
 let pwaInstallPrompt = null;
@@ -2504,23 +2583,3 @@ function switchStudentTab(tab) {
   _origSwitchStudentTab(tab);
 }
 
-// ── Чат на стороні учня (в профілі) ──────────────────────
-function renderStudentChat(container) {
-  container.innerHTML = `
-    <div class="student-chat-section">
-      <div class="student-chat-title">💬 Чат з тренером</div>
-      <div class="chat-wrap">
-        <div class="chat-messages" id="chatMessages">
-          <div class="chat-loading">Завантаження...</div>
-        </div>
-        <div class="chat-input-bar">
-          <textarea class="chat-input" id="chatInput" placeholder="Напишіть тренеру..." rows="1"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('student');}"></textarea>
-          <button class="chat-send-btn" onclick="sendChatMessage('student')">📤</button>
-        </div>
-      </div>
-    </div>
-  `;
-  loadChatMessages('student');
-  startChatPoll('student');
-}
