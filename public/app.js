@@ -11,7 +11,16 @@ if (tg) {
   tg.setBackgroundColor('#0d0f14');
 }
 
-const userId   = tg?.initDataUnsafe?.user?.id || 'demo_user';
+// Унікальний ID: Telegram user id або постійний device id в localStorage
+function getDeviceId() {
+  let id = localStorage.getItem('hp_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('hp_device_id', id);
+  }
+  return id;
+}
+const userId   = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : getDeviceId();
 const userName = tg?.initDataUnsafe?.user?.first_name || 'Користувач';
 
 // ─── STATE ────────────────────────────────────────────────────
