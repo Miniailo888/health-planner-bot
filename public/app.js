@@ -113,17 +113,55 @@ loadData();
 const hasProfile = loadProfile();
 document.getElementById('userBadge').textContent = profile.name || userName;
 
-if (!hasProfile || !profile.gender) {
-  // show onboarding
-  document.getElementById('onboardingOverlay').style.display = 'flex';
-  // Enter key on name input
-  document.getElementById('obNameInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') obNameNext();
-  });
-} else {
+// Визначаємо роль і запускаємо відповідний флоу
+appInit();
+
+async function appInit() {
+  // Перевіряємо збережену роль на сервері
+  try {
+    const res = await fetch(`/api/user/${userId}`);
+    const serverData = await res.json();
+    if (serverData.role === 'coach' && serverData.coachId) {
+      // Тренер — завантажуємо дашборд
+      const coachRes = await fetch(`/api/coach/by-telegram/${userId}`);
+      const coach = await coachRes.json();
+      if (!coach.error) {
+        hideAllOverlays();
+        launchCoachDashboard(coach);
+        return;
+      }
+    }
+    if (serverData.role === 'student' && serverData.coachId) {
+      // Учень — звичайний додаток, але з плашкою тренера
+      hideRoleOverlay();
+      startStudentApp(serverData);
+      return;
+    }
+  } catch {}
+
+  // Немає ролі або гість — показуємо вибір ролі
+  document.getElementById('roleOverlay').style.display = 'flex';
+}
+
+function hideAllOverlays() {
+  document.getElementById('roleOverlay').classList.add('hidden');
   document.getElementById('onboardingOverlay').classList.add('hidden');
-  applyTheme(profile.gender);
-  bootApp();
+}
+function hideRoleOverlay() {
+  document.getElementById('roleOverlay').classList.add('hidden');
+}
+
+function startStudentApp(serverData) {
+  if (!hasProfile || !profile.gender) {
+    document.getElementById('onboardingOverlay').style.display = 'flex';
+    document.getElementById('obNameInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') obNameNext();
+    });
+  } else {
+    document.getElementById('onboardingOverlay').classList.add('hidden');
+    applyTheme(profile.gender);
+    bootApp();
+  }
 }
 
 function bootApp() {
@@ -131,6 +169,186 @@ function bootApp() {
   renderSportCards();
   updateNutritionHeroSubtitle();
   updateCycleTabVisibility();
+  // Якщо учень — завантажуємо корективи тренера
+  if (userData.role === 'student' && userData.coachId) {
+    loadCoachCorrections();
+  }
+}
+
+async function loadCoachCorrections() {
+  try {
+    const res = await fetch(`/api/user/${userId}`);
+    const data = await res.json();
+    if (data.corrections && (data.corrections.generalNote || data.corrections.nutritionNote || data.corrections.sportNote)) {
+      showCoachBanner(data.corrections);
+    }
+  } catch {}
+}
+
+function showCoachBanner(corrections) {
+  if (!corrections.generalNote && !corrections.nutritionNote && !corrections.sportNote) return;
+  const existing = document.getElementById('coachBanner');
+  if (existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'coachBanner';
+  banner.className = 'coach-banner';
+  banner.innerHTML = `
+    <div class="coach-banner-header">
+      <span>🏋️ Повідомлення від тренера</span>
+      <button onclick="document.getElementById('coachBanner').remove()">✕</button>
+    </div>
+    ${corrections.generalNote   ? `<div class="coach-banner-row"><b>📋 Загальне:</b> ${corrections.generalNote}</div>` : ''}
+    ${corrections.nutritionNote ? `<div class="coach-banner-row"><b>🥗 Харчування:</b> ${corrections.nutritionNote}</div>` : ''}
+    ${corrections.sportNote     ? `<div class="coach-banner-row"><b>💪 Тренування:</b> ${corrections.sportNote}</div>` : ''}
+  `;
+  document.getElementById('appMain').prepend(banner);
+}
+
+// ═══════════════════════════════════════════════════════════
+//   ROLE SELECTION
+// ═══════════════════════════════════════════════════════════
+function showRoleScreen() {
+  document.getElementById('roleScreen').classList.remove('hidden');
+  document.getElementById('coachRegScreen').classList.add('hidden');
+  document.getElementById('studentRegScreen').classList.add('hidden');
+}
+
+function selectRole(role) {
+  if (role === 'guest') {
+    // Зберігаємо як гість і запускаємо онбординг
+    fetch(`/api/user/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'guest' }),
+    });
+    hideRoleOverlay();
+    if (!hasProfile || !profile.gender) {
+      document.getElementById('onboardingOverlay').style.display = 'flex';
+      document.getElementById('obNameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') obNameNext();
+      });
+    } else {
+      applyTheme(profile.gender);
+      bootApp();
+    }
+  } else if (role === 'coach') {
+    document.getElementById('roleScreen').classList.add('hidden');
+    document.getElementById('coachRegScreen').classList.remove('hidden');
+  } else if (role === 'student') {
+    document.getElementById('roleScreen').classList.add('hidden');
+    document.getElementById('studentRegScreen').classList.remove('hidden');
+  }
+}
+
+// ─── COACH REGISTRATION ───────────────────────────────────
+async function registerCoach() {
+  const name = document.getElementById('coachNameInput').value.trim();
+  const errEl = document.getElementById('coachRegError');
+  if (!name) {
+    errEl.textContent = 'Введіть ім\'я';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/coach/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telegramId: userId, name }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    hideAllOverlays();
+    launchCoachDashboard(data.coach);
+  } catch {
+    errEl.textContent = 'Помилка підключення';
+    errEl.classList.remove('hidden');
+  }
+}
+
+// ─── STUDENT INVITE ───────────────────────────────────────
+let pendingCoachData = null;
+
+async function validateInviteCode() {
+  const code = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
+  const errEl  = document.getElementById('studentRegError');
+  const foundEl = document.getElementById('inviteCoachFound');
+  if (!code) {
+    errEl.textContent = 'Введіть код';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+  foundEl.classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/invite/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    // Показуємо знайденого тренера і кнопку підтвердження
+    pendingCoachData = data;
+    foundEl.innerHTML = `
+      <div class="invite-found-card">
+        <div class="invite-found-icon">🏋️</div>
+        <div class="invite-found-text">
+          <div class="invite-found-name">Тренер: <b>${data.coachName}</b></div>
+          <div class="invite-found-sub">Підключитись до цього тренера?</div>
+        </div>
+        <button class="invite-confirm-btn" onclick="confirmStudentLink()">Так, підключити ✓</button>
+      </div>
+    `;
+    foundEl.classList.remove('hidden');
+  } catch {
+    errEl.textContent = 'Помилка підключення';
+    errEl.classList.remove('hidden');
+  }
+}
+
+async function confirmStudentLink() {
+  if (!pendingCoachData) return;
+  const errEl = document.getElementById('studentRegError');
+  try {
+    const res = await fetch('/api/student/link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: String(userId), inviteCode: document.getElementById('inviteCodeInput').value.trim().toUpperCase() }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    // Прив'язано — запускаємо онбординг для учня
+    hideRoleOverlay();
+    if (!hasProfile || !profile.gender) {
+      document.getElementById('onboardingOverlay').style.display = 'flex';
+      document.getElementById('obNameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') obNameNext();
+      });
+    } else {
+      applyTheme(profile.gender);
+      bootApp();
+    }
+    showToast(`✅ Підключено до тренера ${data.coach.name}!`);
+  } catch {
+    errEl.textContent = 'Помилка';
+    errEl.classList.remove('hidden');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1440,4 +1658,182 @@ function deleteCurrentNote() {
   closeNoteModal();
   renderNotesTab();
   showToast('🗑 Нотатку видалено');
+}
+
+// ═══════════════════════════════════════════════════════════
+//   COACH DASHBOARD
+// ═══════════════════════════════════════════════════════════
+let currentCoach = null;
+let currentStudentId = null;
+
+function launchCoachDashboard(coach) {
+  currentCoach = coach;
+  document.getElementById('coachDashboard').classList.remove('hidden');
+  document.getElementById('appMain').classList.add('hidden');
+  document.getElementById('bottomNav').classList.add('hidden');
+  document.getElementById('appHeader') && document.getElementById('appHeader').classList.add('hidden');
+
+  document.getElementById('coachHeaderName').textContent = coach.name;
+  document.getElementById('coachInviteCode').textContent = coach.inviteCode;
+
+  loadStudentsList();
+}
+
+async function loadStudentsList() {
+  const listEl = document.getElementById('coachStudentsList');
+  listEl.innerHTML = '<div class="coach-loading">Завантаження...</div>';
+
+  try {
+    const res = await fetch(`/api/coach/${currentCoach.id}/students`);
+    const students = await res.json();
+
+    if (!students.length) {
+      listEl.innerHTML = `
+        <div class="coach-empty">
+          <div class="coach-empty-icon">👥</div>
+          <div class="coach-empty-title">Учнів поки немає</div>
+          <div class="coach-empty-sub">Поділіться кодом запрошення з учнями</div>
+          <div class="coach-invite-big" onclick="copyInviteCode()">
+            🔗 ${currentCoach.inviteCode}
+            <span class="coach-invite-hint">Натисніть, щоб скопіювати</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = `
+      <div class="coach-section-title">👥 Мої учні (${students.length}/10)</div>
+      <div class="coach-invite-bar" onclick="copyInviteCode()">
+        🔗 Код запрошення: <b>${currentCoach.inviteCode}</b>
+        <span class="coach-copy-hint">скопіювати</span>
+      </div>
+      <div class="coach-students-list">
+        ${students.map(s => renderStudentCard(s)).join('')}
+      </div>
+    `;
+  } catch {
+    listEl.innerHTML = '<div class="coach-error">Помилка завантаження</div>';
+  }
+}
+
+function renderStudentCard(student) {
+  const p = student.profile || {};
+  const name = p.name || `Учень`;
+  const gender = p.gender === 'female' ? '♀' : '♂';
+  const stats = p.weight ? `${p.weight} кг · ${p.height} см · ${p.age} р` : 'Профіль не заповнено';
+  const hasCorrections = student.corrections && (
+    student.corrections.nutritionNote || student.corrections.sportNote
+  );
+
+  return `
+    <div class="coach-student-card" onclick="openStudent('${student.id}')">
+      <div class="coach-student-avatar">${gender}</div>
+      <div class="coach-student-info">
+        <div class="coach-student-name">${name}</div>
+        <div class="coach-student-stats">${stats}</div>
+      </div>
+      <div class="coach-student-right">
+        ${hasCorrections ? '<span class="coach-correction-badge">✏️</span>' : ''}
+        <span class="coach-student-arrow">›</span>
+      </div>
+    </div>
+  `;
+}
+
+async function openStudent(studentId) {
+  currentStudentId = studentId;
+  document.getElementById('coachStudentsList').classList.add('hidden');
+  const viewEl = document.getElementById('coachStudentView');
+  viewEl.classList.remove('hidden');
+
+  const contentEl = document.getElementById('coachStudentContent');
+  contentEl.innerHTML = '<div class="coach-loading">Завантаження...</div>';
+
+  try {
+    const res = await fetch(`/api/coach/${currentCoach.id}/student/${studentId}`);
+    const studentData = await res.json();
+    if (studentData.error) {
+      contentEl.innerHTML = `<div class="coach-error">${studentData.error}</div>`;
+      return;
+    }
+
+    const p = studentData.profile || {};
+    document.getElementById('coachStudentName').textContent = p.name || 'Учень';
+
+    const corrections = studentData.corrections || {};
+
+    contentEl.innerHTML = `
+      <div class="coach-student-profile-card">
+        <div class="coach-sp-row"><span>Ім'я</span><b>${p.name || '—'}</b></div>
+        <div class="coach-sp-row"><span>Стать</span><b>${p.gender === 'female' ? '♀ Жінка' : '♂ Чоловік'}</b></div>
+        <div class="coach-sp-row"><span>Вік</span><b>${p.age || '—'} р</b></div>
+        <div class="coach-sp-row"><span>Вага</span><b>${p.weight || '—'} кг</b></div>
+        <div class="coach-sp-row"><span>Зріст</span><b>${p.height || '—'} см</b></div>
+      </div>
+
+      <div class="coach-corrections-section">
+        <div class="coach-section-title">✏️ Корективи для учня</div>
+        <p class="coach-corrections-hint">Ці нотатки учень побачить у своїх планах з позначкою "від тренера"</p>
+
+        <div class="coach-corr-block">
+          <label class="coach-corr-label">🥗 Харчування — рекомендації</label>
+          <textarea class="coach-corr-textarea" id="corrNutrition" placeholder="Напр.: виключити глютен, додати більше білка ввечері...">${corrections.nutritionNote || ''}</textarea>
+        </div>
+
+        <div class="coach-corr-block">
+          <label class="coach-corr-label">💪 Тренування — рекомендації</label>
+          <textarea class="coach-corr-textarea" id="corrSport" placeholder="Напр.: збільшити кількість підходів у присіданнях до 5...">${corrections.sportNote || ''}</textarea>
+        </div>
+
+        <div class="coach-corr-block">
+          <label class="coach-corr-label">📋 Загальне повідомлення учню</label>
+          <textarea class="coach-corr-textarea" id="corrGeneral" placeholder="Загальні рекомендації, мотивація...">${corrections.generalNote || ''}</textarea>
+        </div>
+
+        <button class="coach-save-btn" onclick="saveStudentCorrections()">💾 Зберегти корективи</button>
+      </div>
+    `;
+  } catch {
+    contentEl.innerHTML = '<div class="coach-error">Помилка завантаження</div>';
+  }
+}
+
+async function saveStudentCorrections() {
+  const corrections = {
+    nutritionNote: document.getElementById('corrNutrition').value.trim(),
+    sportNote: document.getElementById('corrSport').value.trim(),
+    generalNote: document.getElementById('corrGeneral').value.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const res = await fetch(`/api/coach/${currentCoach.id}/corrections/${currentStudentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corrections),
+    });
+    const data = await res.json();
+    if (data.ok) showToast('✅ Корективи збережено!');
+    else showToast('❌ Помилка збереження');
+  } catch {
+    showToast('❌ Помилка');
+  }
+}
+
+function backToStudentsList() {
+  currentStudentId = null;
+  document.getElementById('coachStudentView').classList.add('hidden');
+  document.getElementById('coachStudentsList').classList.remove('hidden');
+  loadStudentsList();
+}
+
+function copyInviteCode() {
+  if (!currentCoach) return;
+  const code = currentCoach.inviteCode;
+  navigator.clipboard.writeText(code).then(() => {
+    showToast(`📋 Код ${code} скопійовано!`);
+  }).catch(() => {
+    showToast(`Код: ${code}`);
+  });
 }

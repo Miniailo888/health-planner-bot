@@ -22,6 +22,68 @@
 </head>
 <body>
 
+  <!-- ═══ ROLE SELECTION OVERLAY ═══ -->
+  <div class="role-overlay" id="roleOverlay">
+
+    <!-- ── Вибір ролі ── -->
+    <div class="role-screen" id="roleScreen">
+      <div class="role-logo">⚡ Health Planner</div>
+      <h2 class="role-title">Оберіть тип акаунту</h2>
+      <p class="role-subtitle">Як ви хочете використовувати додаток?</p>
+      <div class="role-cards">
+        <button class="role-card" onclick="selectRole('guest')">
+          <span class="role-card-icon">👤</span>
+          <span class="role-card-title">Гість</span>
+          <span class="role-card-desc">Особисте харчування та тренування</span>
+          <span class="role-card-badge free">Безкоштовно</span>
+        </button>
+        <button class="role-card" onclick="selectRole('coach')">
+          <span class="role-card-icon">🏋️</span>
+          <span class="role-card-title">Тренер</span>
+          <span class="role-card-desc">Керуйте учнями, редагуйте їх плани</span>
+          <span class="role-card-badge premium">До 10 учнів</span>
+        </button>
+        <button class="role-card" onclick="selectRole('student')">
+          <span class="role-card-icon">🎓</span>
+          <span class="role-card-title">Учень</span>
+          <span class="role-card-desc">Отримуйте персональні плани від тренера</span>
+          <span class="role-card-badge invite">По запрошенню</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Реєстрація тренера ── -->
+    <div class="role-screen hidden" id="coachRegScreen">
+      <div class="role-back-btn" onclick="showRoleScreen()">← Назад</div>
+      <div class="role-logo">🏋️ Тренер</div>
+      <h2 class="role-title">Реєстрація тренера</h2>
+      <p class="role-subtitle">Введіть ваше ім'я — учні будуть бачити його при підключенні</p>
+      <div class="ob-name-wrap">
+        <input class="ob-name-input" id="coachNameInput" type="text"
+          placeholder="Ваше ім'я або псевдонім..." maxlength="40" autocomplete="off" />
+        <button class="ob-name-btn coach-btn" onclick="registerCoach()">Зареєструватись →</button>
+      </div>
+      <div class="role-error hidden" id="coachRegError"></div>
+    </div>
+
+    <!-- ── Введення коду учнем ── -->
+    <div class="role-screen hidden" id="studentRegScreen">
+      <div class="role-back-btn" onclick="showRoleScreen()">← Назад</div>
+      <div class="role-logo">🎓 Учень</div>
+      <h2 class="role-title">Підключення до тренера</h2>
+      <p class="role-subtitle">Введіть код запрошення від вашого тренера</p>
+      <div class="ob-name-wrap">
+        <input class="ob-name-input invite-input" id="inviteCodeInput" type="text"
+          placeholder="HP-XXXXXX" maxlength="9" autocomplete="off"
+          oninput="this.value=this.value.toUpperCase()" />
+        <button class="ob-name-btn student-btn" onclick="validateInviteCode()">Підключитись →</button>
+      </div>
+      <div class="role-error hidden" id="studentRegError"></div>
+      <div class="invite-coach-found hidden" id="inviteCoachFound"></div>
+    </div>
+
+  </div>
+
   <!-- ═══ ONBOARDING OVERLAY ═══ -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-inner">
@@ -169,7 +231,7 @@
   </div>
 
   <!-- HEADER -->
-  <header class="app-header">
+  <header class="app-header" id="appHeader">
     <div class="header-content">
       <div class="header-logo">
         <span class="logo-icon">⚡</span>
@@ -317,6 +379,34 @@
     </section>
 
   </main>
+
+  <!-- ═══ COACH DASHBOARD ═══ -->
+  <div class="coach-dashboard hidden" id="coachDashboard">
+    <header class="coach-header">
+      <div class="coach-header-title">
+        <span>🏋️</span>
+        <span id="coachHeaderName">Тренер</span>
+      </div>
+      <div class="coach-invite-chip" id="coachInviteChip" onclick="copyInviteCode()">
+        <span>🔗</span>
+        <span id="coachInviteCode">HP-......</span>
+      </div>
+    </header>
+
+    <!-- Список учнів -->
+    <div class="coach-body" id="coachStudentsList">
+      <!-- динамічно заповнюється -->
+    </div>
+
+    <!-- Перегляд/редагування учня -->
+    <div class="coach-student-view hidden" id="coachStudentView">
+      <div class="coach-back-bar">
+        <button class="coach-back-btn" onclick="backToStudentsList()">← Список учнів</button>
+        <span id="coachStudentName"></span>
+      </div>
+      <div id="coachStudentContent"></div>
+    </div>
+  </div>
 
   <!-- BOTTOM NAV — 7 tabs -->
   <nav class="bottom-nav" id="bottomNav">
