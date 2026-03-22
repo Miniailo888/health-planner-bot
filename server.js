@@ -12,74 +12,78 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── USER ────────────────────────────────────────────────────────────────────
-app.get('/api/user/:userId', (req, res) => {
-  res.json(getUser(req.params.userId));
+app.get('/api/user/:userId', async (req, res) => {
+  try { res.json(await getUser(req.params.userId)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.post('/api/user/:userId', (req, res) => {
-  saveUser(req.params.userId, req.body);
-  res.json({ ok: true });
+
+app.post('/api/user/:userId', async (req, res) => {
+  try {
+    await saveUser(req.params.userId, req.body);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── COACH ───────────────────────────────────────────────────────────────────
-// Реєстрація / отримання тренера
-app.post('/api/coach/register', (req, res) => {
-  const { telegramId, name } = req.body;
-  if (!telegramId || !name) return res.json({ error: 'Вкажіть ім\'я' });
-  const coach = createCoach(telegramId, name);
-
-  // зберігаємо роль у userData
-  const userData = getUser(String(telegramId));
-  userData.role = 'coach';
-  userData.coachId = coach.id;
-  saveUser(String(telegramId), userData);
-
-  res.json({ ok: true, coach });
+app.post('/api/coach/register', async (req, res) => {
+  try {
+    const { telegramId, name } = req.body;
+    if (!telegramId || !name) return res.json({ error: "Вкажіть ім'я" });
+    const coach = await createCoach(telegramId, name);
+    const userData = await getUser(String(telegramId));
+    userData.role    = 'coach';
+    userData.coachId = coach.id;
+    await saveUser(String(telegramId), userData);
+    res.json({ ok: true, coach });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/coach/by-telegram/:telegramId', (req, res) => {
-  const coach = getCoachByTelegramId(req.params.telegramId);
-  if (!coach) return res.json({ error: 'not_found' });
-  res.json(coach);
+app.get('/api/coach/by-telegram/:telegramId', async (req, res) => {
+  try {
+    const coach = await getCoachByTelegramId(req.params.telegramId);
+    if (!coach) return res.json({ error: 'not_found' });
+    res.json(coach);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Список учнів
-app.get('/api/coach/:coachId/students', (req, res) => {
-  res.json(getCoachStudents(req.params.coachId));
+app.get('/api/coach/:coachId/students', async (req, res) => {
+  try { res.json(await getCoachStudents(req.params.coachId)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Повні дані учня (для тренера)
-app.get('/api/coach/:coachId/student/:studentId', (req, res) => {
-  const result = getStudentFull(req.params.coachId, req.params.studentId);
-  res.json(result);
+app.get('/api/coach/:coachId/student/:studentId', async (req, res) => {
+  try { res.json(await getStudentFull(req.params.coachId, req.params.studentId)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Зберегти повні дані учня (тренер редагує)
-app.post('/api/coach/:coachId/student/:studentId', (req, res) => {
-  const result = saveStudentFull(req.params.coachId, req.params.studentId, req.body);
-  res.json(result);
+app.post('/api/coach/:coachId/student/:studentId', async (req, res) => {
+  try { res.json(await saveStudentFull(req.params.coachId, req.params.studentId, req.body)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Зберегти лише корективи
-app.post('/api/coach/:coachId/corrections/:studentId', (req, res) => {
-  res.json(saveCorrections(req.params.coachId, req.params.studentId, req.body));
+app.post('/api/coach/:coachId/corrections/:studentId', async (req, res) => {
+  try { res.json(await saveCorrections(req.params.coachId, req.params.studentId, req.body)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── INVITE ──────────────────────────────────────────────────────────────────
-// Перевірити код запрошення
-app.post('/api/invite/validate', (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.json({ error: 'Введіть код' });
-  const coach = getCoachByInviteCode(code);
-  if (!coach) return res.json({ error: 'Невірний код запрошення' });
-  if (coach.students.length >= 10) return res.json({ error: 'Тренер вже має максимум учнів' });
-  res.json({ ok: true, coachName: coach.name, coachId: coach.id });
+app.post('/api/invite/validate', async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.json({ error: 'Введіть код' });
+    const coach = await getCoachByInviteCode(code);
+    if (!coach) return res.json({ error: 'Невірний код запрошення' });
+    if (coach.students.length >= 10) return res.json({ error: 'Тренер вже має максимум учнів' });
+    res.json({ ok: true, coachName: coach.name, coachId: coach.id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Прив'язати учня до тренера
-app.post('/api/student/link', (req, res) => {
-  const { userId, inviteCode } = req.body;
-  if (!userId || !inviteCode) return res.json({ error: 'Missing data' });
-  res.json(linkStudentToCoach(userId, inviteCode));
+app.post('/api/student/link', async (req, res) => {
+  try {
+    const { userId, inviteCode } = req.body;
+    if (!userId || !inviteCode) return res.json({ error: 'Missing data' });
+    res.json(await linkStudentToCoach(userId, inviteCode));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── SPA fallback ────────────────────────────────────────────────────────────

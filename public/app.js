@@ -44,7 +44,8 @@ let currentNutritionLevel = 'all';
 let currentSportCat       = 'mass';
 let currentModal          = null;
 
-// ─── STORAGE ─────────────────────────────────────────────────
+// ─── STORAGE — синхронізація з сервером ──────────────────────
+// Локальний кеш (localStorage) для швидкого старту
 function loadData() {
   try {
     const raw = localStorage.getItem(`hp_${userId}`);
@@ -54,6 +55,12 @@ function loadData() {
 function saveData() {
   try {
     localStorage.setItem(`hp_${userId}`, JSON.stringify(userData));
+    // Фоновий запис на сервер
+    fetch(`/api/user/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...userData, profile }),
+    }).catch(() => {});
   } catch {}
 }
 function loadProfile() {
@@ -66,7 +73,39 @@ function loadProfile() {
 function saveProfile() {
   try {
     localStorage.setItem(`hp_profile_${userId}`, JSON.stringify(profile));
+    // Фоновий запис на сервер
+    fetch(`/api/user/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...userData, profile }),
+    }).catch(() => {});
   } catch {}
+}
+
+// Завантаження з сервера (повна синхронізація між пристроями)
+async function syncFromServer() {
+  try {
+    const res  = await fetch(`/api/user/${userId}`);
+    const data = await res.json();
+    if (data.error) return false;
+
+    // Синхронізуємо userData
+    const uKeys = ['savedNutrition','savedSport','savedWeek','mealTimes','sportTimes',
+                   'weekTimes','selectedSnacks','mealOptions','notes','cycleData',
+                   'notesBg','role','coachId','corrections'];
+    uKeys.forEach(k => { if (data[k] !== undefined) userData[k] = data[k]; });
+
+    // Синхронізуємо profile
+    if (data.profile && data.profile.gender) {
+      profile = { ...profile, ...data.profile };
+      localStorage.setItem(`hp_profile_${userId}`, JSON.stringify(profile));
+    }
+
+    localStorage.setItem(`hp_${userId}`, JSON.stringify(userData));
+    return !!data.profile?.gender;
+  } catch {
+    return false;
+  }
 }
 
 // ─── BMR / TDEE ──────────────────────────────────────────────
@@ -117,29 +156,45 @@ document.getElementById('userBadge').textContent = profile.name || userName;
 appInit();
 
 async function appInit() {
-  // Перевіряємо збережену роль на сервері
-  try {
-    const res = await fetch(`/api/user/${userId}`);
-    const serverData = await res.json();
-    if (serverData.role === 'coach' && serverData.coachId) {
-      // Тренер — завантажуємо дашборд
-      const coachRes = await fetch(`/api/coach/by-telegram/${userId}`);
-      const coach = await coachRes.json();
-      if (!coach.error) {
-        hideAllOverlays();
-        launchCoachDashboard(coach);
-        return;
-      }
-    }
-    if (serverData.role === 'student' && serverData.coachId) {
-      // Учень — звичайний додаток, але з плашкою тренера
-      hideRoleOverlay();
-      startStudentApp(serverData);
+  // Синхронізуємо з сервером (це дає кросс-пристрою підтримку)
+  const serverHasProfile = await syncFromServer();
+
+  // Оновлюємо бейдж після синхронізації
+  document.getElementById('userBadge').textContent = profile.name || userName;
+
+  const role = userData.role || 'none';
+
+  if (role === 'coach' && userData.coachId) {
+    const coachRes = await fetch(`/api/coach/by-telegram/${userId}`);
+    const coach = await coachRes.json();
+    if (!coach.error) {
+      hideAllOverlays();
+      launchCoachDashboard(coach);
       return;
     }
-  } catch {}
+  }
 
-  // Немає ролі або гість — показуємо вибір ролі
+  if (role === 'student' && userData.coachId) {
+    hideRoleOverlay();
+    startStudentApp();
+    return;
+  }
+
+  if (role === 'guest') {
+    hideRoleOverlay();
+    if (!profile.gender) {
+      document.getElementById('onboardingOverlay').style.display = 'flex';
+      document.getElementById('obNameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') obNameNext();
+      });
+    } else {
+      applyTheme(profile.gender);
+      bootApp();
+    }
+    return;
+  }
+
+  // Нема ролі — показуємо вибір ролі
   document.getElementById('roleOverlay').style.display = 'flex';
 }
 
@@ -151,8 +206,8 @@ function hideRoleOverlay() {
   document.getElementById('roleOverlay').classList.add('hidden');
 }
 
-function startStudentApp(serverData) {
-  if (!hasProfile || !profile.gender) {
+function startStudentApp() {
+  if (!profile.gender) {
     document.getElementById('onboardingOverlay').style.display = 'flex';
     document.getElementById('obNameInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') obNameNext();

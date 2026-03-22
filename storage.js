@@ -1,34 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+const User  = require('./models/User');
+const Coach = require('./models/Coach');
 
-const DATA_FILE    = path.join(__dirname, 'data.json');
-const COACHES_FILE = path.join(__dirname, 'coaches.json');
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function readJSON(file) {
-  if (!fs.existsSync(file)) fs.writeFileSync(file, '{}');
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
-}
-function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-// ─── Users ────────────────────────────────────────────────────────────────────
-function getUser(userId) {
-  const data = readJSON(DATA_FILE);
-  if (!data[userId]) {
-    data[userId] = { role: 'guest', dayPlans: {}, weekPlans: {}, sportPlans: [], nutritionPlans: [] };
-    writeJSON(DATA_FILE, data);
-  }
-  return data[userId];
-}
-function saveUser(userId, userData) {
-  const data = readJSON(DATA_FILE);
-  data[userId] = userData;
-  writeJSON(DATA_FILE, data);
-}
-
-// ─── Coaches ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function generateInviteCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = 'HP-';
@@ -36,97 +9,114 @@ function generateInviteCode() {
   return code;
 }
 
-function getCoachByTelegramId(telegramId) {
-  const coaches = readJSON(COACHES_FILE);
-  return Object.values(coaches).find(c => c.telegramId === String(telegramId)) || null;
+// ─── Users ────────────────────────────────────────────────────────────────────
+async function getUser(userId) {
+  const tid = String(userId);
+  let user = await User.findOne({ telegramId: tid }).lean();
+  if (!user) {
+    const created = await User.create({ telegramId: tid, role: 'guest' });
+    user = created.toObject();
+  }
+  return user;
 }
 
-function getCoachByInviteCode(code) {
-  const coaches = readJSON(COACHES_FILE);
-  return Object.values(coaches).find(c => c.inviteCode === code.toUpperCase()) || null;
+async function saveUser(userId, data) {
+  // Видаляємо _id щоб не перезаписувати
+  const { _id, __v, ...payload } = data;
+  await User.findOneAndUpdate(
+    { telegramId: String(userId) },
+    { $set: payload },
+    { upsert: true, new: true }
+  );
 }
 
-function getCoachById(coachId) {
-  const coaches = readJSON(COACHES_FILE);
-  return coaches[coachId] || null;
+// ─── Coaches ──────────────────────────────────────────────────────────────────
+async function getCoachByTelegramId(telegramId) {
+  return await Coach.findOne({ telegramId: String(telegramId) }).lean();
 }
 
-function createCoach(telegramId, name) {
-  const coaches = readJSON(COACHES_FILE);
-  // already registered?
-  const existing = Object.values(coaches).find(c => c.telegramId === String(telegramId));
+async function getCoachByInviteCode(code) {
+  return await Coach.findOne({ inviteCode: code.toUpperCase() }).lean();
+}
+
+async function getCoachById(coachId) {
+  return await Coach.findOne({ id: coachId }).lean();
+}
+
+async function createCoach(telegramId, name) {
+  const existing = await Coach.findOne({ telegramId: String(telegramId) }).lean();
   if (existing) return existing;
 
-  // unique invite code
   let code;
   do { code = generateInviteCode(); }
-  while (Object.values(coaches).some(c => c.inviteCode === code));
+  while (await Coach.findOne({ inviteCode: code }));
 
   const coachId = `coach_${telegramId}`;
-  coaches[coachId] = {
+  const coach = await Coach.create({
     id: coachId,
     telegramId: String(telegramId),
     name,
     inviteCode: code,
     students: [],
     createdAt: new Date().toISOString(),
-  };
-  writeJSON(COACHES_FILE, coaches);
-  return coaches[coachId];
+  });
+  return coach.toObject();
 }
 
-function linkStudentToCoach(studentId, inviteCode) {
-  const coach = getCoachByInviteCode(inviteCode);
+async function linkStudentToCoach(studentId, inviteCode) {
+  const coach = await getCoachByInviteCode(inviteCode);
   if (!coach) return { error: 'Невірний код запрошення' };
   if (coach.students.length >= 10) return { error: 'Тренер вже має максимум учнів (10)' };
 
-  const coaches = readJSON(COACHES_FILE);
-  if (!coaches[coach.id].students.includes(studentId)) {
-    coaches[coach.id].students.push(studentId);
-    writeJSON(COACHES_FILE, coaches);
-  }
+  await Coach.updateOne(
+    { id: coach.id },
+    { $addToSet: { students: String(studentId) } }
+  );
 
-  const userData = getUser(studentId);
+  const userData = await getUser(studentId);
   userData.role    = 'student';
   userData.coachId = coach.id;
-  saveUser(studentId, userData);
+  await saveUser(studentId, userData);
 
   return { ok: true, coach: { id: coach.id, name: coach.name, inviteCode: coach.inviteCode } };
 }
 
-function getCoachStudents(coachId) {
-  const coach = getCoachById(coachId);
+async function getCoachStudents(coachId) {
+  const coach = await getCoachById(coachId);
   if (!coach) return [];
-  const data = readJSON(DATA_FILE);
+
+  const students = await User.find(
+    { telegramId: { $in: coach.students } },
+    { telegramId: 1, profile: 1, corrections: 1 }
+  ).lean();
+
   return coach.students.map(sid => {
-    const u = data[sid] || {};
-    return {
-      id: sid,
-      profile: u.profile || {},
-      corrections: u.corrections || {},
-    };
+    const u = students.find(s => s.telegramId === sid) || {};
+    return { id: sid, profile: u.profile || {}, corrections: u.corrections || {} };
   });
 }
 
-function saveCorrections(coachId, studentId, corrections) {
-  const coach = getCoachById(coachId);
-  if (!coach || !coach.students.includes(studentId)) return { error: 'Немає доступу' };
-  const userData = getUser(studentId);
-  userData.corrections = corrections;
-  saveUser(studentId, userData);
+async function saveCorrections(coachId, studentId, corrections) {
+  const coach = await getCoachById(coachId);
+  if (!coach || !coach.students.includes(String(studentId))) return { error: 'Немає доступу' };
+  await User.findOneAndUpdate(
+    { telegramId: String(studentId) },
+    { $set: { corrections } },
+    { upsert: true }
+  );
   return { ok: true };
 }
 
-function getStudentFull(coachId, studentId) {
-  const coach = getCoachById(coachId);
-  if (!coach || !coach.students.includes(studentId)) return { error: 'Немає доступу' };
-  return getUser(studentId);
+async function getStudentFull(coachId, studentId) {
+  const coach = await getCoachById(coachId);
+  if (!coach || !coach.students.includes(String(studentId))) return { error: 'Немає доступу' };
+  return await getUser(studentId);
 }
 
-function saveStudentFull(coachId, studentId, studentData) {
-  const coach = getCoachById(coachId);
-  if (!coach || !coach.students.includes(studentId)) return { error: 'Немає доступу' };
-  saveUser(studentId, studentData);
+async function saveStudentFull(coachId, studentId, studentData) {
+  const coach = await getCoachById(coachId);
+  if (!coach || !coach.students.includes(String(studentId))) return { error: 'Немає доступу' };
+  await saveUser(studentId, studentData);
   return { ok: true };
 }
 
