@@ -573,18 +573,24 @@ function finishOnboarding() {
 // ═══════════════════════════════════════════════════════════
 document.querySelectorAll('.nav-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    const tab = btn.dataset.tab;
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${tab}`).classList.add('active');
-
-    if (tab === 'profile')  renderProfile();
-    if (tab === 'vitamins') renderVitamins();
-    if (tab === 'cycle')    renderCycleTab();
-    if (tab === 'notes')    renderNotesTab();
+    switchTabTo(btn.dataset.tab);
   });
 });
+
+function switchTabTo(tab) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('active');
+  const section = document.getElementById(`tab-${tab}`);
+  if (section) section.classList.add('active');
+
+  if (tab === 'profile')  renderProfile();
+  if (tab === 'vitamins') renderVitamins();
+  if (tab === 'cycle')    renderCycleTab();
+  if (tab === 'notes')    renderNotesTab();
+  if (tab === 'students') loadStudentsList();
+}
 
 // ═══════════════════════════════════════════════════════════
 //   NUTRITION TAB
@@ -1334,7 +1340,9 @@ function confirmResetProfile() {
     body: JSON.stringify({ role: null, coachId: null, profile }),
   }).catch(() => {});
   document.body.classList.remove('theme-male', 'theme-female');
-  document.getElementById('coachDashboard').classList.add('hidden');
+  document.getElementById('navStudents').classList.add('hidden');
+  const studentsSection = document.getElementById('tab-students');
+  if (studentsSection) studentsSection.classList.remove('active');
   document.getElementById('appMain').classList.remove('hidden');
   document.getElementById('bottomNav').classList.remove('hidden');
   const h = document.getElementById('appHeader');
@@ -1357,7 +1365,9 @@ async function confirmDeleteAccount() {
   userData = { savedNutrition: [], savedSport: [], savedWeek: null, mealTimes: {}, sportTimes: {}, weekTimes: {}, selectedSnacks: {}, mealOptions: {} };
   profile  = { name: '', gender: null, age: 25, weight: 70, height: 175, goal: 'balance' };
   document.body.classList.remove('theme-male', 'theme-female');
-  document.getElementById('coachDashboard').classList.add('hidden');
+  document.getElementById('navStudents').classList.add('hidden');
+  const studentsSection = document.getElementById('tab-students');
+  if (studentsSection) studentsSection.classList.remove('active');
   document.getElementById('appMain').classList.remove('hidden');
   document.getElementById('bottomNav').classList.remove('hidden');
   const h = document.getElementById('appHeader');
@@ -1843,34 +1853,19 @@ function skipToMainMenu() {
   }
 }
 
-function backToMainApp() {
-  document.getElementById('coachDashboard').classList.add('hidden');
-  document.getElementById('appMain').classList.remove('hidden');
-  document.getElementById('bottomNav').classList.remove('hidden');
-  const h = document.getElementById('appHeader');
-  if (h) h.classList.remove('hidden');
-}
-
 function launchCoachDashboard(coach) {
   currentCoach = coach;
-  // Спочатку запускаємо звичайне меню
+  document.getElementById('coachHeaderName').textContent = coach.name;
+  document.getElementById('coachInviteCode').textContent = coach.inviteCode;
+  document.getElementById('navStudents').classList.remove('hidden');
+
   applyTheme(profile.gender || 'male');
   if (!profile.gender) {
     document.getElementById('onboardingOverlay').style.display = 'flex';
   } else {
     bootApp();
+    switchTabTo('students');
   }
-  // Потім показуємо кабінет тренера поверх
-  document.getElementById('coachDashboard').classList.remove('hidden');
-  document.getElementById('appMain').classList.add('hidden');
-  document.getElementById('bottomNav').classList.add('hidden');
-  const h = document.getElementById('appHeader');
-  if (h) h.classList.add('hidden');
-
-  document.getElementById('coachHeaderName').textContent = coach.name;
-  document.getElementById('coachInviteCode').textContent = coach.inviteCode;
-
-  loadStudentsList();
 }
 
 async function loadStudentsList() {

@@ -362,39 +362,37 @@
       <div class="notes-grid" id="notesGrid"></div>
     </section>
 
-  </main>
-
-  <!-- ═══ COACH DASHBOARD ═══ -->
-  <div class="coach-dashboard hidden" id="coachDashboard">
-    <header class="coach-header">
-      <div class="coach-header-title">
-        <button class="coach-back-main-btn" onclick="backToMainApp()" title="Головне меню">←</button>
-        <span>🏋️</span>
-        <span id="coachHeaderName">Тренер</span>
-      </div>
-      <div class="coach-header-actions">
-        <div class="coach-invite-chip" id="coachInviteChip" onclick="copyInviteCode()">
-          <span>🔗</span>
-          <span id="coachInviteCode">HP-......</span>
+    <!-- ╔══ УЧНІ (тренер) ══╗ -->
+    <section class="tab-section" id="tab-students">
+      <div class="section-hero students-hero">
+        <div class="hero-icon">👥</div>
+        <div class="hero-text">
+          <h2 id="coachHeaderName">Кабінет тренера</h2>
+          <p>Управління учнями</p>
         </div>
-        <button class="coach-qr-btn" onclick="openQrModal()" title="QR-код">⬛ QR</button>
+        <div class="students-hero-actions">
+          <div class="coach-invite-chip" id="coachInviteChip" onclick="copyInviteCode()">
+            <span>🔗</span>
+            <span id="coachInviteCode">HP-......</span>
+          </div>
+          <button class="coach-qr-btn" onclick="openQrModal()" title="QR-код">⬛ QR</button>
+        </div>
       </div>
-    </header>
 
-    <!-- Список учнів -->
-    <div class="coach-body" id="coachStudentsList">
-      <!-- динамічно заповнюється -->
-    </div>
+      <!-- Список учнів -->
+      <div class="coach-body" id="coachStudentsList"></div>
 
-    <!-- Перегляд/редагування учня -->
-    <div class="coach-student-view hidden" id="coachStudentView">
-      <div class="coach-back-bar">
-        <button class="coach-back-btn" onclick="backToStudentsList()">← Список учнів</button>
-        <span id="coachStudentName"></span>
+      <!-- Перегляд/редагування учня -->
+      <div class="coach-student-view hidden" id="coachStudentView">
+        <div class="coach-back-bar">
+          <button class="coach-back-btn" onclick="backToStudentsList()">← Список учнів</button>
+          <span id="coachStudentName"></span>
+        </div>
+        <div id="coachStudentContent"></div>
       </div>
-      <div id="coachStudentContent"></div>
-    </div>
-  </div>
+    </section>
+
+  </main>
 
   <!-- BOTTOM NAV — 7 tabs -->
   <nav class="bottom-nav" id="bottomNav">
@@ -421,6 +419,10 @@
     <button class="nav-btn" data-tab="notes">
       <span class="nav-icon">📓</span>
       <span class="nav-label">Нотатки</span>
+    </button>
+    <button class="nav-btn hidden" data-tab="students" id="navStudents">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Учні</span>
     </button>
     <button class="nav-btn" data-tab="profile">
       <span class="nav-icon">👤</span>
