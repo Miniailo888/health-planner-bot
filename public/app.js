@@ -149,7 +149,7 @@ function applyTheme(gender) {
 
 // ─── INIT ─────────────────────────────────────────────────────
 loadData();
-const hasProfile = loadProfile();
+loadProfile();
 document.getElementById('userBadge').textContent = profile.name || userName;
 
 // Визначаємо роль і запускаємо відповідний флоу
@@ -279,14 +279,14 @@ function showRoleScreen() {
 
 function selectRole(role) {
   if (role === 'guest') {
-    // Зберігаємо як гість і запускаємо онбординг
+    userData.role = 'guest';
     fetch(`/api/user/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: 'guest' }),
-    });
+    }).catch(() => {});
     hideRoleOverlay();
-    if (!hasProfile || !profile.gender) {
+    if (!profile.gender) {
       document.getElementById('onboardingOverlay').style.display = 'flex';
       document.getElementById('obNameInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') obNameNext();
@@ -397,8 +397,10 @@ async function confirmStudentLink() {
       return;
     }
     // Прив'язано — запускаємо онбординг для учня
+    userData.role = 'student';
+    userData.coachId = data.coach.id;
     hideRoleOverlay();
-    if (!hasProfile || !profile.gender) {
+    if (!profile.gender) {
       document.getElementById('onboardingOverlay').style.display = 'flex';
       document.getElementById('obNameInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') obNameNext();
@@ -1833,9 +1835,10 @@ function renderStudentCard(student) {
   const name = p.name || `Учень`;
   const gender = p.gender === 'female' ? '♀' : '♂';
   const stats = p.weight ? `${p.weight} кг · ${p.height} см · ${p.age} р` : 'Профіль не заповнено';
-  const hasCorrections = student.corrections && (
-    student.corrections.nutritionNote || student.corrections.sportNote
-  );
+  const c = student.corrections || {};
+  const hasCorrections = c.generalNote || c.nutritionNote || c.sportNote ||
+    (c.assignedNutrition && c.assignedNutrition.length) ||
+    (c.assignedSport && c.assignedSport.length);
 
   return `
     <div class="coach-student-card" onclick="openStudent('${student.id}')">
@@ -2031,6 +2034,7 @@ async function saveStudentNutrition() {
   corr.assignedNutrition = [...draftNutrition];
   corr.updatedAt = new Date().toISOString();
   await patchCorrections(corr);
+  renderStudentTab();
 }
 
 // ── Вкладка Тренування ────────────────────────────────────
@@ -2056,6 +2060,7 @@ async function saveStudentSport() {
   corr.assignedSport = [...draftSport];
   corr.updatedAt = new Date().toISOString();
   await patchCorrections(corr);
+  renderStudentTab();
 }
 
 // ── Спільна функція збереження корективів ─────────────────
